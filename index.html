@@ -1,0 +1,307 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>果凍小人 - 終極挑戰版</title>
+    <style>
+        body { margin: 0; padding: 0; overflow: hidden; background-color: #fce4ec; font-family: sans-serif; touch-action: none; user-select: none; }
+        #game-container { width: 100vw; height: 100vh; position: relative; background: linear-gradient(180deg, #a1c4fd 0%, #c2e9fb 100%); }
+        
+        #player {
+            width: 50px; height: 50px; 
+            background: linear-gradient(135deg, #ff9a9e 0%, #fecfef 100%);
+            position: absolute; bottom: 0; left: 0;
+            transform-origin: bottom center; border-radius: 14px; z-index: 100;
+            box-shadow: 0 8px 15px rgba(255, 154, 158, 0.4);
+            transition: transform 0.1s cubic-bezier(0.175, 0.885, 0.32, 1.275); 
+        }
+        #eyes { position: absolute; top: 12px; width: 10px; height: 10px; background: white; border-radius: 50%; transition: left 0.15s ease, top 0.2s ease; }
+
+        /* UI 配置 */
+        #ui-header { position: absolute; top: 25px; width: 100%; text-align: center; z-index: 200; pointer-events: none; }
+        .score-box { display: inline-block; background: rgba(255,255,255,0.5); color: #5d6d7e; padding: 8px 25px; border-radius: 20px; font-weight: bold; font-size: 18px; backdrop-filter: blur(5px); }
+        .best-score { font-size: 14px; opacity: 0.8; margin-top: 5px; }
+
+        /* 說明介面 */
+        #tutorial-overlay {
+            position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%);
+            background: rgba(255, 255, 255, 0.4); backdrop-filter: blur(10px);
+            padding: 20px 40px; border-radius: 25px; border: 1px solid rgba(255, 255, 255, 0.5);
+            text-align: center; color: #5d6d7e; z-index: 400; transition: opacity 0.5s;
+        }
+        .key-tip { margin: 10px 0; font-weight: bold; }
+        .key-btn { background: #fff; padding: 2px 8px; border-radius: 5px; box-shadow: 0 2px 0 #ccc; border: 1px solid #ddd; }
+
+        /* 手動重來 */
+        #manual-reset { position: absolute; top: 20px; right: 20px; width: 45px; height: 45px; background: rgba(255,255,255,0.4); border-radius: 50%; z-index: 300; display: flex; align-items: center; justify-content: center; font-size: 24px; cursor: pointer; backdrop-filter: blur(5px); border: 1px solid rgba(255,255,255,0.5); pointer-events: auto; }
+
+        /* 死亡畫面 */
+        #overlay {
+            position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0,0,0,0.4); backdrop-filter: blur(8px);
+            display: none; flex-direction: column; align-items: center; justify-content: center;
+            z-index: 500; color: white; text-align: center;
+        }
+        #restart-btn { background: #ff9a9e; color: white; border: none; padding: 15px 40px; border-radius: 30px; font-size: 24px; font-weight: bold; cursor: pointer; }
+
+        /* 平台與波紋 */
+        .platform { position: absolute; background: rgba(255, 255, 255, 0.5); backdrop-filter: blur(5px); border-radius: 10px; border: 1px solid rgba(255,255,255,0.3); z-index: 5; }
+        .danger { background: rgba(255, 82, 82, 0.4); border-color: #ff5252; }
+        .shaking { animation: shake 0.1s infinite; }
+        @keyframes shake { 0% { transform: translateX(2px); } 100% { transform: translateX(-2px); } }
+        .jump-wave { position: absolute; left: 50%; bottom: -15px; width: 40px; height: 15px; border: 3px solid rgba(255,255,255,0.8); border-radius: 50%; pointer-events: none; animation: waveAnim 0.4s forwards; z-index: -1; }
+        .super-wave { border-color: #fff176; box-shadow: 0 0 25px #fff59d; border-width: 6px; }
+        @keyframes waveAnim { 0% { transform: translateX(-50%) scale(0.1); opacity: 1; } 100% { transform: translateX(-50%) scale(3.5); opacity: 0; } }
+
+        /* 行動裝置按鈕 */
+        .mobile-ui { position: absolute; width: 100%; height: 100%; top: 0; left: 0; z-index: 300; pointer-events: none; display: none; }
+        .btn { position: absolute; background: rgba(255, 255, 255, 0.4); backdrop-filter: blur(8px); border: 1px solid rgba(255, 255, 255, 0.6); display: flex; align-items: center; justify-content: center; color: #5d6d7e; font-weight: bold; pointer-events: auto; border-radius: 22px; }
+        #btn-left { bottom: 25px; left: 20px; width: 75px; height: 70px; font-size: 24px; }
+        #btn-right { bottom: 25px; left: 105px; width: 75px; height: 70px; font-size: 24px; }
+        #btn-action { bottom: 20px; right: 20px; width: 130px; height: 90px; border-radius: 35px; font-size: 20px; }
+    </style>
+</head>
+<body>
+    <div id="game-container">
+        <div id="ui-header">
+            <div class="score-box">
+                <div id="score-ui">高度: 0 m</div>
+                <div id="best-ui" class="best-score">最高: 0 m</div>
+            </div>
+        </div>
+        
+        <div id="manual-reset" title="R鍵也可重來">🔄</div>
+
+        <div id="tutorial-overlay">
+            <h2 style="margin-top:0">🎮 操作說明</h2>
+            <div id="pc-tutorial">
+                <div class="key-tip"><span class="key-btn">A</span> <span class="key-btn">D</span> : 左右移動</div>
+                <div class="key-tip"><span class="key-btn">S</span> : 蹲下 / 快速下降</div>
+                <div class="key-tip"><span class="key-btn">Space</span> : 跳躍 (鬆開S後快點Space可超級跳)</div>
+                <div class="key-tip"><span class="key-btn">R</span> : 重新開始</div>
+            </div>
+            <div id="mobile-tutorial" style="display:none">
+                <div class="key-tip">左側箭頭 : 左右移動</div>
+                <div class="key-tip">ACTION : 點擊跳躍 / 長按蹲下</div>
+                <div class="key-tip">鬆開後快點 ACTION 可超級跳</div>
+            </div>
+            <p style="font-size:12px; margin-top:15px; opacity:0.7">開始動作後此說明將消失</p>
+        </div>
+
+        <div id="overlay">
+            <h1 id="over-title">摔下去了！</h1>
+            <p id="final-score">最終高度：0 m</p>
+            <button id="restart-btn">再試一次 (R)</button>
+        </div>
+
+        <div id="player"><div id="eyes"></div></div>
+        <div id="plat-box"></div>
+
+        <div class="mobile-ui" id="mobile-ctrl">
+            <div class="btn" id="btn-left">←</div>
+            <div class="btn" id="btn-right">→</div>
+            <div class="btn" id="btn-action">ACTION</div>
+        </div>
+    </div>
+
+    <script>
+        const player = document.getElementById('player');
+        const eyes = document.getElementById('eyes');
+        const platBox = document.getElementById('plat-box');
+        const scoreUI = document.getElementById('score-ui');
+        const bestUI = document.getElementById('best-ui');
+        const overlay = document.getElementById('overlay');
+        const tutOverlay = document.getElementById('tutorial-overlay');
+        const restartBtn = document.getElementById('restart-btn');
+        const manualReset = document.getElementById('manual-reset');
+
+        let px, py, vx, vy, score, cameraY, nextPlatY, highScore;
+        let isJumping, jumpCount, isCrouching, facingRight, lastRelease, platforms, isDead;
+        let loopId = null, hasMoved = false;
+
+        const GRAVITY = 0.7, FALL_G = 2.2, JUMP_P = 15, FRICTION = 0.88;
+        const P_WIDTH = 50; 
+        const isTouch = 'ontouchstart' in window || navigator.maxTouchPoints > 0;
+
+        if (isTouch) {
+            document.getElementById('mobile-ctrl').style.display = 'block';
+            document.getElementById('pc-tutorial').style.display = 'none';
+            document.getElementById('mobile-tutorial').style.display = 'block';
+        }
+
+        highScore = localStorage.getItem('jelly_high_score') || 0;
+        bestUI.innerHTML = `最高: ${highScore} m`;
+
+        function initGame() {
+            if (loopId) cancelAnimationFrame(loopId);
+            isDead = false;
+            px = window.innerWidth / 2;
+            py = 115; vx = 0; vy = 0; score = 0; cameraY = 0; nextPlatY = 250;
+            isJumping = false; jumpCount = 0; isCrouching = false;
+            facingRight = true; lastRelease = 0; platforms = [];
+
+            platBox.innerHTML = '';
+            overlay.style.display = 'none';
+            scoreUI.innerHTML = `高度: 0 m`;
+
+            spawnPlatform(0, 100, window.innerWidth, false);
+            for(let i=0; i<10; i++) generateNextPlatform();
+            
+            draw();
+            loopId = requestAnimationFrame(update);
+        }
+
+        function spawnPlatform(x, y, w, isDanger) {
+            const d = document.createElement('div');
+            d.className = 'platform' + (isDanger ? ' danger' : '');
+            d.style.width = w + 'px'; d.style.height = '15px';
+            platBox.appendChild(d);
+            platforms.push({ x, y, w, h: 15, isDanger, el: d, shakeTimer: 0, dead: false });
+        }
+
+        function generateNextPlatform() {
+            let maxW_Mult = Math.max(2, 7 - (score / 15)); 
+            let randomW = (Math.random() * (maxW_Mult - 1) + 1) * P_WIDTH;
+            const x = Math.random() * (window.innerWidth - randomW);
+            const isDanger = Math.random() > 0.75; 
+            spawnPlatform(x, nextPlatY, randomW, isDanger);
+            nextPlatY += 120 + Math.random() * 40;
+        }
+
+        function gameOver() {
+            if (isDead) return;
+            isDead = true;
+            if (score > highScore) {
+                highScore = score;
+                localStorage.setItem('jelly_high_score', highScore);
+                bestUI.innerHTML = `最高: ${highScore} m`;
+                document.getElementById('over-title').innerHTML = "🎉 新紀錄！";
+            } else {
+                document.getElementById('over-title').innerHTML = "摔下去了！";
+            }
+            document.getElementById('final-score').innerHTML = `最終高度：${score} m`;
+            overlay.style.display = 'flex';
+        }
+
+        function startHidingTut() {
+            if (!hasMoved) {
+                hasMoved = true;
+                tutOverlay.style.opacity = '0';
+                setTimeout(() => tutOverlay.style.display = 'none', 500);
+            }
+        }
+
+        function update() {
+            if (isDead) return;
+
+            let acc = (isTouch ? 0.75 : 1.2) * (isCrouching ? 0.6 : 1);
+            if (m.left) { vx -= acc; facingRight = false; startHidingTut(); }
+            if (m.right) { vx += acc; facingRight = true; startHidingTut(); }
+            vx *= FRICTION;
+            px += vx;
+            if (px < 0) px = window.innerWidth;
+            if (px > window.innerWidth) px = 0;
+
+            vy -= (isCrouching ? FALL_G : GRAVITY);
+            py += vy;
+
+            if (py - cameraY > window.innerHeight * 0.45) {
+                cameraY += (py - cameraY - window.innerHeight * 0.45) * 0.1;
+                let currentH = Math.max(0, Math.floor(py / 10) - 12);
+                if (currentH > score) {
+                    score = currentH;
+                    scoreUI.innerHTML = `高度: ${score} m`;
+                }
+            }
+
+            let hit = false;
+            if (vy <= 0) {
+                platforms.forEach(p => {
+                    if (!p.dead && px + 20 > p.x && px - 20 < p.x + p.w && (py - vy) >= p.y + p.h && py <= p.y + p.h) {
+                        py = p.y + p.h; vy = 0; hit = true;
+                        if (p.isDanger) {
+                            p.shakeTimer++; p.el.classList.add('shaking');
+                            if (p.shakeTimer > 35) { p.dead = true; p.el.style.opacity = '0'; }
+                        }
+                    }
+                });
+            }
+            if (hit) { isJumping = false; jumpCount = 0; }
+
+            if (nextPlatY - cameraY < window.innerHeight + 200) generateNextPlatform();
+            platforms = platforms.filter(p => {
+                if (p.y < cameraY - 150) { p.el.remove(); return false; }
+                return true;
+            });
+
+            if (py < cameraY - 50) { gameOver(); return; }
+
+            draw();
+            loopId = requestAnimationFrame(update);
+        }
+
+        function draw() {
+            player.style.left = px + 'px';
+            player.style.bottom = (py - cameraY) + 'px';
+            platforms.forEach(p => {
+                p.el.style.left = p.x + 'px';
+                p.el.style.bottom = (p.y - cameraY) + 'px';
+            });
+            let sx = 1, sy = 1;
+            if (isCrouching) { sx = 1.45; sy = 0.55; eyes.style.top = '24px'; }
+            else if (vy !== 0) { sy = 1 + Math.abs(vy) / 45; sx = 1 / sy; eyes.style.top = '10px'; }
+            else { eyes.style.top = '12px'; }
+            player.style.transform = `translateX(-50%) scaleX(${sx}) scaleY(${sy})`;
+            eyes.style.left = facingRight ? '32px' : '8px';
+        }
+
+        function handleJump() {
+            if (jumpCount >= 2 || isDead) return;
+            startHidingTut();
+            let p = JUMP_P, isS = false, now = Date.now();
+            if (jumpCount === 0 && now - lastRelease < 250 && !isCrouching) { p *= (isTouch ? 1.3 : 1.5); isS = true; lastRelease = 0; }
+            if (isS || jumpCount === 1) {
+                const w = document.createElement('div');
+                w.className = 'jump-wave' + (isS ? ' super-wave' : '');
+                player.appendChild(w);
+                setTimeout(() => w.remove(), 400);
+            }
+            vy = p; jumpCount++; isJumping = true; isCrouching = false;
+        }
+
+        let m = { left: false, right: false };
+        if (isTouch) {
+            const act = document.getElementById('btn-action');
+            let t = null;
+            act.addEventListener('touchstart', (e) => { e.preventDefault(); t = setTimeout(() => { isCrouching = true; startHidingTut(); }, 180); });
+            act.addEventListener('touchend', (e) => { e.preventDefault(); clearTimeout(t); if (!isCrouching) handleJump(); else { isCrouching = false; lastRelease = Date.now(); } });
+            const b = (id, k) => {
+                const el = document.getElementById(id);
+                el.addEventListener('touchstart', (e) => { e.preventDefault(); m[k] = true; });
+                el.addEventListener('touchend', (e) => { e.preventDefault(); m[k] = false; });
+            };
+            b('btn-left', 'left'); b('btn-right', 'right');
+        }
+
+        window.addEventListener('keydown', (e) => {
+            const k = e.key.toLowerCase();
+            if (k === 'r') { initGame(); return; } // R 鍵重來
+            if (isDead) return;
+            if (k === 'a') m.left = true; if (k === 'd') m.right = true;
+            if (k === 's') { isCrouching = true; startHidingTut(); }
+            if (k === ' ' || k === 'w') { e.preventDefault(); handleJump(); }
+        });
+        window.addEventListener('keyup', (e) => {
+            const k = e.key.toLowerCase();
+            if (k === 'a') m.left = false; if (k === 'd') m.right = false;
+            if (k === 's') { isCrouching = false; lastRelease = Date.now(); }
+        });
+
+        restartBtn.onclick = initGame;
+        manualReset.onclick = initGame;
+
+        initGame();
+    </script>
+</body>
+</html>
