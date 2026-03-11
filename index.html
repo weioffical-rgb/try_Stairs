@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>果凍小人 - 爬樓梯</title>
+    <title>果凍小人</title>
     <style>
         body { margin: 0; padding: 0; overflow: hidden; background-color: #fce4ec; font-family: sans-serif; touch-action: none; user-select: none; }
         #game-container { width: 100vw; height: 100vh; position: relative; background: linear-gradient(180deg, #a1c4fd 0%, #c2e9fb 100%); }
@@ -13,54 +13,43 @@
             background: linear-gradient(135deg, #ff9a9e 0%, #fecfef 100%);
             position: absolute; bottom: 0; left: 0;
             transform-origin: bottom center; border-radius: 14px; z-index: 100;
-            box-shadow: 0 8px 15px rgba(255, 154, 158, 0.4);
-            transition: transform 0.1s cubic-bezier(0.175, 0.885, 0.32, 1.275); 
+            box-shadow: 0 8px 15px rgba(255, 154, 158, 0.3);
         }
-        #eyes { position: absolute; top: 12px; width: 10px; height: 10px; background: white; border-radius: 50%; transition: left 0.15s ease, top 0.2s ease; }
+        #eyes { position: absolute; top: 12px; width: 10px; height: 10px; background: white; border-radius: 50%; }
 
         #ui-header { position: absolute; top: 25px; width: 100%; text-align: center; z-index: 200; pointer-events: none; }
-        .score-box { display: inline-block; background: rgba(255,255,255,0.5); color: #5d6d7e; padding: 8px 25px; border-radius: 20px; font-weight: bold; font-size: 18px; backdrop-filter: blur(5px); }
+        .score-box { display: inline-block; background: rgba(255,255,255,0.6); color: #5d6d7e; padding: 8px 25px; border-radius: 20px; font-weight: bold; font-size: 18px; backdrop-filter: blur(5px); }
         .best-score { font-size: 14px; opacity: 0.8; margin-top: 5px; }
 
-        /* 教學介面修復 */
         #tutorial-overlay {
             position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%);
-            background: rgba(255, 255, 255, 0.5); backdrop-filter: blur(12px);
-            padding: 25px 40px; border-radius: 30px; border: 1px solid rgba(255, 255, 255, 0.6);
-            text-align: center; color: #4a5568; z-index: 400; transition: opacity 0.5s;
-            box-shadow: 0 10px 30px rgba(0,0,0,0.05);
+            background: rgba(255, 255, 255, 0.7); backdrop-filter: blur(12px);
+            padding: 25px; border-radius: 30px; text-align: center; color: #4a5568; z-index: 400; transition: opacity 0.5s; width: 80%; max-width: 320px; border: 1px solid rgba(255,255,255,0.5);
         }
-        .tut-title { margin: 0 0 15px 0; font-size: 22px; color: #ff8a9e; }
-        .key-row { margin: 12px 0; font-size: 16px; line-height: 1.6; }
-        .key-cap { background: #fff; padding: 3px 10px; border-radius: 6px; border: 1px solid #d1d5db; box-shadow: 0 2px 0 #d1d5db; font-weight: bold; color: #333; margin: 0 3px; }
-        .super-jump-tip { color: #d69e2e; font-weight: bold; margin-top: 10px; padding: 8px; background: rgba(254, 252, 232, 0.5); border-radius: 12px; }
 
-        #manual-reset { position: absolute; top: 20px; right: 20px; width: 45px; height: 45px; background: rgba(255,255,255,0.4); border-radius: 50%; z-index: 300; display: flex; align-items: center; justify-content: center; font-size: 24px; cursor: pointer; backdrop-filter: blur(5px); border: 1px solid rgba(255,255,255,0.5); }
+        .platform { position: absolute; height: 15px; border-radius: 10px; border: 1px solid rgba(255,255,255,0.3); z-index: 5; background: rgba(255, 255, 255, 0.5); backdrop-filter: blur(3px); transform-origin: center; }
+        .danger { background: rgba(255, 82, 82, 0.5); border-color: #ff5252; box-shadow: 0 0 10px rgba(255, 82, 82, 0.2); }
+        .expand { background: rgba(155, 89, 182, 0.5); border-color: #8e44ad; }
+        
+        .shaking { animation: shake 0.1s infinite; }
+        @keyframes shake { 0% { transform: translateX(2px); } 100% { transform: translateX(-2px); } }
 
         #overlay {
             position: absolute; top: 0; left: 0; width: 100%; height: 100%;
             background: rgba(0,0,0,0.4); backdrop-filter: blur(8px);
-            display: none; flex-direction: column; align-items: center; justify-content: center;
-            z-index: 500; color: white; text-align: center;
+            display: none; flex-direction: column; align-items: center; justify-content: center; z-index: 500; color: white;
         }
-        #restart-btn { background: #ff9a9e; color: white; border: none; padding: 15px 40px; border-radius: 30px; font-size: 24px; font-weight: bold; cursor: pointer; }
+        #restart-btn { background: #ff9a9e; color: white; border: none; padding: 15px 40px; border-radius: 30px; font-size: 20px; font-weight: bold; margin-top: 20px; }
 
-        .platform { position: absolute; background: rgba(255, 255, 255, 0.5); backdrop-filter: blur(5px); border-radius: 10px; border: 1px solid rgba(255,255,255,0.3); z-index: 5; }
-        .danger { background: rgba(255, 82, 82, 0.4); border-color: #ff5252; }
-        .expand { background: rgba(155, 89, 182, 0.4); border-color: #8e44ad; }
-        .shaking { animation: shake 0.1s infinite; }
-        @keyframes shake { 0% { transform: translateX(2px); } 100% { transform: translateX(-2px); } }
-
-        .jump-wave { position: absolute; left: 50%; bottom: -15px; width: 40px; height: 15px; border: 3px solid rgba(255,255,255,0.8); border-radius: 50%; pointer-events: none; animation: jumpWaveInner 0.4s forwards; z-index: -1; }
+        .jump-wave { position: absolute; left: 50%; bottom: -15px; width: 40px; height: 15px; border: 3px solid rgba(255,255,255,0.8); border-radius: 50%; pointer-events: none; animation: wave 0.4s forwards; z-index: -1; }
         .super-wave { border-color: #fff176; box-shadow: 0 0 25px #fff59d; border-width: 6px; }
-        @keyframes jumpWaveInner { 0% { transform: translateX(-50%) scale(0.1); opacity: 1; } 100% { transform: translateX(-50%) scale(3.5); opacity: 0; } }
+        @keyframes wave { 0% { transform: translateX(-50%) scale(0.1); opacity: 1; } 100% { transform: translateX(-50%) scale(3.5); opacity: 0; } }
 
         .mobile-ui { position: absolute; width: 100%; height: 100%; top: 0; left: 0; z-index: 300; pointer-events: none; display: none; }
-        .btn { position: absolute; background: rgba(255, 255, 255, 0.4); backdrop-filter: blur(8px); border: 1px solid rgba(255, 255, 255, 0.6); display: flex; align-items: center; justify-content: center; color: #5d6d7e; font-weight: bold; pointer-events: auto; border-radius: 22px; transition: transform 0.1s; }
-        .btn:active { transform: scale(0.95); }
-        #btn-left { bottom: 25px; left: 20px; width: 75px; height: 70px; font-size: 24px; }
-        #btn-right { bottom: 25px; left: 105px; width: 75px; height: 70px; font-size: 24px; }
-        #btn-action { bottom: 20px; right: 20px; width: 130px; height: 90px; border-radius: 35px; font-size: 20px; }
+        .btn { position: absolute; background: rgba(255, 255, 255, 0.4); backdrop-filter: blur(8px); border: 1px solid rgba(255, 255, 255, 0.6); display: flex; align-items: center; justify-content: center; pointer-events: auto; border-radius: 22px; }
+        #btn-left { bottom: 25px; left: 15px; width: 70px; height: 70px; font-size: 24px; }
+        #btn-right { bottom: 25px; left: 95px; width: 70px; height: 70px; font-size: 24px; }
+        #btn-action { bottom: 20px; right: 15px; width: 110px; height: 85px; border-radius: 30px; }
     </style>
 </head>
 <body>
@@ -71,27 +60,15 @@
                 <div id="best-ui" class="best-score">最高: 0 m</div>
             </div>
         </div>
-        <div id="manual-reset">🔄</div>
-
         <div id="tutorial-overlay">
-            <h2 class="tut-title">🎮 果凍攀爬指南</h2>
-            <div id="pc-tut">
-                <div class="key-row"><span class="key-cap">A</span> <span class="key-cap">D</span> 移動小人</div>
-                <div class="key-row"><span class="key-cap">S</span> 蹲下擠壓 / 空中急降</div>
-                <div class="key-row"><span class="key-cap">Space</span> 跳躍 / 二段跳</div>
-                <div class="super-jump-tip">✨ 蓄力跳：長按 <span class="key-cap">S</span> 縮到最小後鬆開，<br>瞬間按 <span class="key-cap">Space</span> 噴射！</div>
-            </div>
-            <div id="mobile-tut" style="display:none">
-                <div class="key-row">左側箭頭移動，右側 ACTION 跳躍</div>
-                <div class="key-row">長按 ACTION 進行蹲下蓄力</div>
-                <div class="super-jump-tip">✨ 蓄力跳：長按鬆開後<br>立刻再次點擊 ACTION！</div>
-            </div>
-            <p style="margin-top:20px; font-size:12px; opacity:0.6;">( 按下任何鍵開始遊戲並隱藏說明 )</p>
+            <h3 style="margin:0">🎮 挑戰開始</h3>
+            <p>紅色板：站太久會崩塌！</p>
+            <p>紫色板：會伸縮，200m後出現</p>
+            <p style="font-size:14px; color:#d69e2e;">✨ 蓄力跳：鬆開蹲下後秒按跳躍</p>
         </div>
-
         <div id="overlay">
             <h1 id="over-title">摔下去了！</h1>
-            <p id="final-score">最終高度：0 m</p>
+            <p id="final-score"></p>
             <button id="restart-btn">再試一次 (R)</button>
         </div>
         <div id="player"><div id="eyes"></div></div>
@@ -104,168 +81,162 @@
     </div>
 
     <script>
-        const player = document.getElementById('player');
-        const eyes = document.getElementById('eyes');
-        const platBox = document.getElementById('plat-box');
-        const scoreUI = document.getElementById('score-ui');
-        const bestUI = document.getElementById('best-ui');
-        const overlay = document.getElementById('overlay');
-        const tutOverlay = document.getElementById('tutorial-overlay');
-        const restartBtn = document.getElementById('restart-btn');
-        const manualReset = document.getElementById('manual-reset');
-
-        let px, py, vx, vy, score, cameraY, nextPlatY, highScore;
-        let isJumping, jumpCount, isCrouching, facingRight, lastRelease, platforms, isDead;
-        let loopId = null, hasMoved = false, frameCount = 0;
-
-        const GRAVITY = 0.75, FALL_G = 2.5, JUMP_P = 16, FRICTION = 0.88;
-        const P_WIDTH = 50; 
+        const player = document.getElementById('player'), eyes = document.getElementById('eyes'), platBox = document.getElementById('plat-box'), scoreUI = document.getElementById('score-ui'), bestUI = document.getElementById('best-ui'), tutOverlay = document.getElementById('tutorial-overlay'), overlay = document.getElementById('overlay');
+        
+        let px, py, vx, vy, score, cameraY, nextPlatY, highScore, platforms = [], isDead = false, loopId = null, frameCount = 0, hasMoved = false;
+        
+        const GRAVITY = 0.7, FALL_G = 2.2, JUMP_P = 15, FRICTION = 0.88;
         const isTouch = 'ontouchstart' in window || navigator.maxTouchPoints > 0;
+        if (isTouch) document.getElementById('mobile-ctrl').style.display = 'block';
 
-        if (isTouch) {
-            document.getElementById('mobile-ctrl').style.display = 'block';
-            document.getElementById('pc-tut').style.display = 'none';
-            document.getElementById('mobile-tut').style.display = 'block';
+        function loadBest() {
+            const saved = localStorage.getItem('jelly_high_score');
+            highScore = saved ? parseInt(saved, 10) : 0;
+            bestUI.innerText = `最高: ${highScore} m`;
         }
-
-        highScore = localStorage.getItem('jelly_high_score') || 0;
-        bestUI.innerHTML = `最高: ${highScore} m`;
+        loadBest();
 
         function initGame() {
             if (loopId) cancelAnimationFrame(loopId);
-            isDead = false; frameCount = 0;
-            px = window.innerWidth / 2; py = 120; vx = 0; vy = 0; score = 0; cameraY = 0; nextPlatY = 220;
-            isJumping = false; jumpCount = 0; isCrouching = false; facingRight = true; lastRelease = 0; platforms = [];
-            platBox.innerHTML = ''; overlay.style.display = 'none'; scoreUI.innerHTML = `高度: 0 m`;
+            isDead = false; frameCount = 0; px = window.innerWidth / 2; py = 120; vx = 0; vy = 0; score = 0; cameraY = 0; nextPlatY = 220; platforms = [];
+            platBox.innerHTML = ''; overlay.style.display = 'none'; scoreUI.innerText = `高度: 0 m`;
             spawnPlatform(0, 100, window.innerWidth, 'normal');
-            for(let i=0; i<15; i++) generateNextPlatform();
-            draw();
+            for(let i=0; i<12; i++) generateNextPlatform();
             loopId = requestAnimationFrame(update);
         }
 
         function spawnPlatform(x, y, baseW, type) {
             const d = document.createElement('div');
-            d.className = 'platform ' + (type === 'danger' ? 'danger' : type === 'expand' ? 'expand' : '');
-            d.style.width = baseW + 'px'; d.style.height = '15px';
+            d.className = 'platform ' + type;
+            d.style.width = baseW + 'px';
+            d.style.left = x + 'px';
             platBox.appendChild(d);
-            const baseSpeed = 0.065;
-            const randomSpeed = baseSpeed + (Math.random() - 0.5) * 0.01; 
-            let actualMaxW = type === 'expand' ? baseW * 2 : baseW;
-            platforms.push({ x, y, baseW: actualMaxW, currentW: actualMaxW, h: 15, type, el: d, shakeTimer: 0, dead: false, phase: Math.random() * Math.PI * 2, speed: randomSpeed });
+            const speed = 0.065 + (Math.random() - 0.5) * 0.01;
+            platforms.push({ x, y, baseW, currentW: baseW, type, el: d, phase: Math.random()*6, speed, shakeTimer: 0, dead: false });
         }
 
         function generateNextPlatform() {
-            let maxW_Mult = Math.max(1.8, 6 - (score / 30)); 
-            let randomW = (Math.random() * (maxW_Mult - 1) + 1) * P_WIDTH;
+            let maxW_Mult = Math.max(1.8, 6 - (score / 40));
+            let randomW = (Math.random() * (maxW_Mult - 1) + 1) * 50;
             const x = Math.random() * (window.innerWidth - randomW);
-            let typeRoll = Math.random(), type = 'normal';
-            if (score > 200 && typeRoll > 0.70) type = 'expand';
-            else if (typeRoll > 0.85) type = 'danger';
-            spawnPlatform(x, nextPlatY, randomW, type);
-            nextPlatY += 90 + Math.random() * 40;
-        }
+            
+            let type = 'normal';
+            let roll = Math.random();
 
-        function startHidingTut() { if (!hasMoved) { hasMoved = true; tutOverlay.style.opacity = '0'; setTimeout(() => tutOverlay.style.display = 'none', 500); } }
+            // 修復後的邏輯：200m 以下只有紅板，200m 以上紅紫共存
+            if (score > 200) {
+                if (roll > 0.8) type = 'expand'; // 20% 紫色
+                else if (roll > 0.6) type = 'danger'; // 20% 紅色
+            } else {
+                if (roll > 0.8) type = 'danger'; // 20% 紅色
+            }
+
+            spawnPlatform(x, nextPlatY, randomW, type);
+            nextPlatY += 85 + Math.random() * 40;
+        }
 
         function update() {
             if (isDead) return;
             frameCount++;
-            let acc = (isTouch ? 0.75 : 1.2) * (isCrouching ? 0.6 : 1);
-            if (m.left) { vx -= acc; facingRight = false; startHidingTut(); }
-            if (m.right) { vx += acc; facingRight = true; startHidingTut(); }
+            let acc = (isTouch ? 0.7 : 1.1) * (isCrouching ? 0.6 : 1);
+            if (m.left) { vx -= acc; facingRight = false; hideTut(); }
+            if (m.right) { vx += acc; facingRight = true; hideTut(); }
             vx *= FRICTION; px += vx;
             if (px < 0) px = window.innerWidth; if (px > window.innerWidth) px = 0;
+
             vy -= (isCrouching ? FALL_G : GRAVITY);
             py += vy;
 
-            if (py - cameraY > window.innerHeight * 0.4) {
-                cameraY += (py - cameraY - window.innerHeight * 0.4) * 0.15;
-                let h = Math.max(0, Math.floor(py / 10) - 12);
-                if (h > score) { score = h; scoreUI.innerHTML = `高度: ${score} m`; }
+            if (py - cameraY > window.innerHeight * 0.45) {
+                cameraY += (py - cameraY - window.innerHeight * 0.45) * 0.12;
+                let curH = Math.max(0, Math.floor(py / 10) - 12);
+                if (curH > score) { score = curH; scoreUI.innerText = `高度: ${score} m`; }
             }
 
             platforms.forEach(p => {
                 if (p.type === 'expand' && !p.dead) {
-                    let minW = 60; 
-                    let range = p.baseW - minW;
-                    p.currentW = minW + (Math.sin(frameCount * p.speed + p.phase) + 1) / 2 * range;
-                    p.el.style.width = p.currentW + 'px';
-                    p.el.style.left = (p.x + (p.baseW - p.currentW) / 2) + 'px';
+                    let minW = 60;
+                    let scale = (minW / p.baseW) + (Math.sin(frameCount * p.speed + p.phase) + 1) / 2 * (1 - (minW / p.baseW));
+                    p.currentW = p.baseW * scale;
+                    p.el.style.transform = `scaleX(${scale})`;
                 }
+                p.el.style.bottom = (p.y - cameraY) + 'px';
             });
 
-            let hit = false;
             if (vy <= 0) {
                 platforms.forEach(p => {
-                    let platLeft = (p.type==='expand' ? (p.x+(p.baseW-p.currentW)/2) : p.x);
-                    let platRight = platLeft + p.currentW;
-                    if (!p.dead && px + 20 > platLeft && px - 20 < platRight && (py - vy) >= p.y + p.h && py <= p.y + p.h) {
-                        py = p.y + p.h; vy = 0; hit = true;
-                        if (p.type === 'danger') { p.shakeTimer++; p.el.classList.add('shaking'); if (p.shakeTimer > 35) { p.dead = true; p.el.style.opacity = '0'; p.el.style.transform = 'translateY(20px)'; } }
+                    let pLeft = p.x + (p.baseW - p.currentW) / 2;
+                    if (!p.dead && px + 20 > pLeft && px - 20 < pLeft + p.currentW && (py - vy) >= p.y + 15 && py <= p.y + 15) {
+                        py = p.y + 15; vy = 0; jumpCount = 0;
+                        if (p.type === 'danger') {
+                            p.shakeTimer++;
+                            p.el.classList.add('shaking');
+                            if (p.shakeTimer > 30) { p.dead = true; p.el.style.opacity = '0'; }
+                        }
                     }
                 });
             }
-            if (hit) { isJumping = false; jumpCount = 0; }
-            if (nextPlatY - cameraY < window.innerHeight + 300) generateNextPlatform();
-            platforms = platforms.filter(p => { if (p.y < cameraY - 150) { p.el.remove(); return false; } return true; });
 
-            if (py < cameraY) { 
-                isDead = true;
-                if (score > highScore) { highScore = score; localStorage.setItem('jelly_high_score', highScore); bestUI.innerHTML = `最高: ${highScore} m`; document.getElementById('over-title').innerHTML = "🎉 新紀錄！"; }
-                document.getElementById('final-score').innerHTML = `最終高度：${score} m`;
-                overlay.style.display = 'flex';
-                return;
-            }
-            draw();
+            if (nextPlatY - cameraY < window.innerHeight + 300) generateNextPlatform();
+            platforms = platforms.filter(p => { if (p.y < cameraY - 100) { p.el.remove(); return false; } return true; });
+
+            if (py < cameraY - 50) gameOver();
+
+            player.style.left = px + 'px';
+            player.style.bottom = (py - cameraY) + 'px';
+            let sx = isCrouching ? 1.4 : (vy !== 0 ? 0.8 : 1), sy = 1/sx;
+            player.style.transform = `translateX(-50%) scale(${sx}, ${sy})`;
+            eyes.style.left = facingRight ? '32px' : '8px';
+
             loopId = requestAnimationFrame(update);
         }
 
-        function draw() {
-            player.style.left = px + 'px'; player.style.bottom = (py - cameraY) + 'px';
-            platforms.forEach(p => { 
-                if (p.type !== 'expand') p.el.style.left = p.x + 'px'; 
-                p.el.style.bottom = (p.y - cameraY) + 'px'; 
-            });
-            let sx = 1, sy = 1;
-            if (isCrouching) { sx = 1.45; sy = 0.55; eyes.style.top = '24px'; }
-            else if (vy !== 0) { sy = 1 + Math.abs(vy) / 45; sx = 1 / sy; eyes.style.top = '10px'; }
-            else { eyes.style.top = '12px'; }
-            player.style.transform = `translateX(-50%) scaleX(${sx}) scaleY(${sy})`;
-            eyes.style.left = facingRight ? '32px' : '8px';
+        function gameOver() {
+            isDead = true;
+            overlay.style.display = 'flex';
+            document.getElementById('final-score').innerText = `最終高度: ${score} m`;
+            if (score > highScore) {
+                highScore = score;
+                localStorage.setItem('jelly_high_score', score);
+                document.getElementById('over-title').innerText = "🎉 創紀錄了！";
+                bestUI.innerText = `最高: ${highScore} m`;
+            } else {
+                document.getElementById('over-title').innerText = "摔下去了！";
+            }
         }
 
+        let m = { left: false, right: false }, isCrouching = false, jumpCount = 0, facingRight = true, lastRelease = 0;
+        function hideTut() { if(!hasMoved) { hasMoved = true; tutOverlay.style.opacity = '0'; } }
+        
         function handleJump() {
             if (jumpCount >= 2 || isDead) return;
-            startHidingTut();
+            hideTut();
             let pwr = JUMP_P, isSuper = false, now = Date.now();
-            if (jumpCount === 0 && now - lastRelease < 250 && !isCrouching) { pwr *= (isTouch ? 1.3 : 1.5); isSuper = true; lastRelease = 0; }
-            if (isSuper || jumpCount === 1) {
-                const wave = document.createElement('div'); wave.className = 'jump-wave' + (isSuper ? ' super-wave' : '');
-                player.appendChild(wave); setTimeout(() => wave.remove(), 400);
-            }
-            vy = pwr; jumpCount++; isJumping = true; isCrouching = false;
+            if (jumpCount === 0 && now - lastRelease < 250 && !isCrouching) { pwr *= 1.4; isSuper = true; }
+            const wave = document.createElement('div');
+            wave.className = 'jump-wave' + (isSuper ? ' super-wave' : '');
+            player.appendChild(wave);
+            setTimeout(() => wave.remove(), 400);
+            vy = pwr; jumpCount++; isCrouching = false;
         }
 
-        let m = { left: false, right: false };
         if (isTouch) {
-            const act = document.getElementById('btn-action'); let t = null;
-            act.addEventListener('touchstart', (e) => { e.preventDefault(); t = setTimeout(() => { isCrouching = true; startHidingTut(); }, 180); });
-            act.addEventListener('touchend', (e) => { e.preventDefault(); clearTimeout(t); if (!isCrouching) handleJump(); else { isCrouching = false; lastRelease = Date.now(); startHidingTut(); } });
-            const b = (id, k) => { const el = document.getElementById(id); el.addEventListener('touchstart', (e) => { e.preventDefault(); m[k] = true; }); el.addEventListener('touchend', (e) => { e.preventDefault(); m[k] = false; }); };
+            const act = document.getElementById('btn-action'); let timer;
+            act.addEventListener('touchstart', (e) => { e.preventDefault(); timer = setTimeout(()=>isCrouching=true, 150); });
+            act.addEventListener('touchend', (e) => { e.preventDefault(); clearTimeout(timer); if(!isCrouching) handleJump(); else { isCrouching=false; lastRelease=Date.now(); } });
+            const b = (id, k) => { document.getElementById(id).addEventListener('touchstart', (e)=>{e.preventDefault(); m[k]=true;}); document.getElementById(id).addEventListener('touchend', (e)=>{e.preventDefault(); m[k]=false;}); };
             b('btn-left', 'left'); b('btn-right', 'right');
         }
-
-        window.addEventListener('keydown', (e) => {
-            const k = e.key.toLowerCase(); if (k === 'r') { initGame(); return; } if (isDead) return;
-            if (k === 'a') m.left = true; if (k === 'd') m.right = true;
-            if (k === 's') { isCrouching = true; startHidingTut(); }
-            if (k === ' ' || k === 'w') { e.preventDefault(); handleJump(); }
-        });
-        window.addEventListener('keyup', (e) => {
-            const k = e.key.toLowerCase(); if (k === 'a') m.left = false; if (k === 'd') m.right = false;
-            if (k === 's') { isCrouching = false; lastRelease = Date.now(); }
-        });
-        restartBtn.onclick = initGame; manualReset.onclick = initGame;
+        window.onkeydown = (e) => {
+            let k = e.key.toLowerCase(); if(k==='r') initGame();
+            if(k==='a') m.left = true; if(k==='d') m.right = true; if(k==='s') isCrouching = true;
+            if(k===' '||k==='w') { e.preventDefault(); handleJump(); }
+        };
+        window.onkeyup = (e) => {
+            let k = e.key.toLowerCase(); if(k==='a') m.left = false; if(k==='d') m.right = false;
+            if(k==='s') { isCrouching = false; lastRelease = Date.now(); }
+        };
+        document.getElementById('restart-btn').onclick = initGame;
         initGame();
     </script>
 </body>
