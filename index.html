@@ -11,13 +11,10 @@
         #player { width: 50px; height: 50px; background: linear-gradient(135deg, #ff9a9e 0%, #fecfef 100%); position: absolute; transform-origin: bottom center; border-radius: 14px; z-index: 100; box-shadow: 0 5px 10px rgba(255,154,158,0.3); will-change: transform, left, bottom; }
         #eyes { position: absolute; top: 12px; width: 10px; height: 10px; background: white; border-radius: 50%; transition: left 0.1s ease; }
         
-        /* 教學說明面板 */
         #tutorial-overlay {
             position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%);
-            background: rgba(255, 255, 255, 0.95);
-            padding: 25px 40px; border-radius: 30px; text-align: center; color: #4a5568; z-index: 400; 
-            transition: opacity 0.5s, visibility 0.5s; width: 80%; max-width: 350px; border: 1px solid rgba(0,0,0,0.05);
-            box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+            background: rgba(255, 255, 255, 0.95); padding: 25px 40px; border-radius: 30px; text-align: center; color: #4a5568; z-index: 400; 
+            transition: opacity 0.5s, visibility 0.5s; width: 80%; max-width: 350px; border: 1px solid rgba(0,0,0,0.05); box-shadow: 0 10px 30px rgba(0,0,0,0.1);
         }
 
         .jump-wave { position: absolute; width: 40px; height: 15px; border: 3px solid rgba(255,255,255,0.9); border-radius: 50%; pointer-events: none; z-index: 1000; transform: translate(-50%, -50%); animation: wave-ani 0.4s ease-out forwards; }
@@ -32,7 +29,7 @@
         .platform { position: absolute; height: 15px; border-radius: 10px; border: 1px solid rgba(255,255,255,0.4); z-index: 5; background: rgba(255,255,255,0.7); transform-origin: center center; transition: opacity 0.2s; }
         .danger { background: rgba(255, 82, 82, 0.7); }
         .expand { background: rgba(155, 89, 182, 0.7); }
-        .seesaw { background: rgba(241, 196, 15, 0.7); }
+        .seesaw { background: rgba(241, 196, 15, 0.7); border-color: #f39c12; }
         .shaking { animation: shake 0.1s infinite; }
         @keyframes shake { 0% { transform: translateX(2px); } 100% { transform: translateX(-2px); } }
         
@@ -43,9 +40,9 @@
         
         .mobile-ui { position: absolute; width: 100%; height: 100%; top: 0; left: 0; z-index: 300; pointer-events: none; display: none; }
         .btn { position: absolute; background: rgba(255, 255, 255, 0.6); border: 1px solid rgba(255, 255, 255, 0.8); display: flex; align-items: center; justify-content: center; pointer-events: auto; border-radius: 22px; font-weight: bold; }
-        #btn-left { bottom: 25px; left: 15px; width: 75px; height: 75px; }
-        #btn-right { bottom: 25px; left: 100px; width: 75px; height: 75px; }
-        #btn-action { bottom: 20px; right: 15px; width: 115px; height: 85px; }
+        #btn-left { bottom: 25px; left: 15px; width: 75px; height: 75px; font-size: 24px; }
+        #btn-right { bottom: 25px; left: 100px; width: 75px; height: 75px; font-size: 24px; }
+        #btn-action { bottom: 20px; right: 15px; width: 115px; height: 85px; border-radius: 35px; font-weight: bold; }
     </style>
 </head>
 <body>
@@ -60,8 +57,8 @@
         <div id="tutorial-overlay">
             <h3 style="margin:0">⚖️ 巔峰攀爬挑戰</h3>
             <p id="tut-device-msg" style="margin: 15px 0; font-weight: 500;">載入中...</p>
-            <div style="color:#d69e2e; font-weight:bold; font-size: 14px;">✨ 技巧：鬆開蓄力後秒按跳躍可發動「超級跳」！</div>
-            <p style="font-size:12px; margin-top:15px; opacity:0.6;">( 按下任何鍵開始攀爬 )</p>
+            <div style="color:#d69e2e; font-weight:bold; font-size: 14px;">✨ 更新：延長紅色平台壽命，挑戰更從容！</div>
+            <p style="font-size:12px; margin-top:15px; opacity:0.6;">( 操作即開始 )</p>
         </div>
 
         <div id="overlay">
@@ -83,17 +80,22 @@
 
     <script>
         const player = document.getElementById('player'), eyes = document.getElementById('eyes'), platBox = document.getElementById('plat-box'), scoreUI = document.getElementById('score-ui'), bestUI = document.getElementById('best-ui'), overlay = document.getElementById('overlay'), container = document.getElementById('game-container'), tutOverlay = document.getElementById('tutorial-overlay');
-        let px, py, vx, vy, score, cameraY, nextPlatY, highScore, platforms = [], isDead = false, loopId = null, frameCount = 0, facingRight = true, standingOn = null, maxReachedY = 0, hasMoved = false;
-        const GRAVITY = 0.72, FALL_G = 2.3, JUMP_P = 15.5, FRICTION = 0.88;
         
-        // --- 智慧設備偵測 ---
+        let px, py, vx, vy, score, cameraY, nextPlatY, highScore, platforms = [], isDead = false, loopId = null, frameCount = 0, facingRight = true, standingOn = null, maxReachedY = 0, hasMoved = false, isCrouching = false;
+        
+        // 物理常數
+        const GRAVITY = 0.72, FALL_G = 2.3, JUMP_P = 15.5, FRICTION = 0.86;
+        const MOVE_ACC = 1.45;
+        const fpsInterval = 1000 / 60; 
+        let then = 0;
+
         const isTouch = 'ontouchstart' in window || navigator.maxTouchPoints > 0;
         const tutMsg = document.getElementById('tut-device-msg');
         if (isTouch) {
             document.getElementById('mobile-ctrl').style.display = 'block';
             tutMsg.innerText = "按鈕移動，長按 ACTION 蓄力，點擊跳躍";
         } else {
-            tutMsg.innerText = "A/D 移動，Space/W 跳躍，S 鍵蓄力";
+            tutMsg.innerText = "A/D 移動，Space 跳躍，S 鍵蓄力";
         }
 
         function loadBest() {
@@ -104,22 +106,18 @@
         loadBest();
 
         function hideTut() {
-            if(!hasMoved) {
-                hasMoved = true;
-                tutOverlay.style.opacity = '0';
-                tutOverlay.style.visibility = 'hidden';
-            }
+            if(!hasMoved) { hasMoved = true; tutOverlay.style.opacity = '0'; tutOverlay.style.visibility = 'hidden'; }
         }
 
         function initGame() {
             if (loopId) cancelAnimationFrame(loopId);
             isDead = false; frameCount = 0; px = window.innerWidth / 2; py = 120; vx = 0; vy = 0; score = 0; cameraY = 0; nextPlatY = 220; platforms = []; facingRight = true; standingOn = null; maxReachedY = 120;
-            platBox.innerHTML = ''; overlay.style.display = 'none'; 
-            scoreUI.innerText = `巔峰高度: 0 m`;
+            platBox.innerHTML = ''; overlay.style.display = 'none'; scoreUI.innerText = `巔峰高度: 0 m`;
             bestUI.classList.remove('new-record-glow');
             loadBest();
             spawnPlatform(window.innerWidth/2 - 100, 100, 200, 'normal');
             for(let i=0; i<15; i++) generateNextPlatform();
+            then = performance.now();
             loopId = requestAnimationFrame(update);
         }
 
@@ -152,76 +150,96 @@
             setTimeout(() => wave.remove(), 400);
         }
 
-        function update() {
+        let m_keys = { left: false, right: false };
+
+        function update(now) {
             if (isDead) return;
-            frameCount++;
-            let acc = (isTouch ? 0.75 : 1.1) * (isCrouching ? 0.6 : 1);
-            if (m.left) { vx -= acc; facingRight = false; hideTut(); }
-            if (m.right) { vx += acc; facingRight = true; hideTut(); }
-            vx *= FRICTION; px += vx;
-            if (px < 0) px = window.innerWidth; if (px > window.innerWidth) px = 0;
-            
-            if (standingOn && standingOn.type === 'seesaw') {
-                let dist = px - (standingOn.x + standingOn.baseW / 2);
-                py = standingOn.y + 15 - Math.tan(standingOn.angle * Math.PI / 180) * dist;
-                vy = 0;
-            } else {
-                vy -= (isCrouching ? FALL_G : GRAVITY);
-                py += vy;
-            }
+            loopId = requestAnimationFrame(update);
 
-            maxReachedY = Math.max(maxReachedY, py);
-            let screenPos = py - cameraY;
-            let dzTop = window.innerHeight * 0.65, dzBot = window.innerHeight * 0.35;
-            if (screenPos > dzTop) cameraY += (screenPos - dzTop) * 0.05;
-            else if (screenPos < dzBot) cameraY += (screenPos - dzBot) * 0.05;
-
-            score = Math.max(score, Math.floor(maxReachedY / 10) - 12);
-            scoreUI.innerText = `巔峰高度: ${score} m`;
-            if (score > highScore && highScore > 0) {
-                bestUI.innerText = `刷新巔峰: ${score} m`;
-                bestUI.classList.add('new-record-glow');
-            }
-
-            platforms.forEach(p => {
-                let trans = `translateZ(0) `;
-                if (p.type === 'expand' && !p.dead) {
-                    let factor = (Math.sin(frameCount * p.speed + p.phase) + 1) / 2;
-                    p.currentW = 60 + factor * (p.baseW * 2.5 - 60);
-                    trans += `scaleX(${p.currentW / p.baseW}) `;
-                } else if (p.type === 'seesaw') {
-                    p.angle *= 0.95; trans += `rotate(${p.angle}deg) `;
+            let elapsed = now - then;
+            if (elapsed > fpsInterval) {
+                then = now - (elapsed % fpsInterval);
+                
+                frameCount++;
+                let dt = 1; 
+                let currentAcc = (isTouch ? MOVE_ACC * 0.7 : MOVE_ACC) * (isCrouching ? 0.6 : 1);
+                
+                if (m_keys.left) { vx -= currentAcc; facingRight = false; hideTut(); }
+                if (m_keys.right) { vx += currentAcc; facingRight = true; hideTut(); }
+                
+                vx *= Math.pow(FRICTION, dt); 
+                px += vx * dt;
+                if (px < 0) px = window.innerWidth; if (px > window.innerWidth) px = 0;
+                
+                if (standingOn && standingOn.type === 'seesaw') {
+                    let dist = px - (standingOn.x + standingOn.baseW / 2);
+                    py = standingOn.y + 15 - Math.tan(standingOn.angle * Math.PI / 180) * dist;
+                    vy = 0;
+                } else {
+                    vy -= (isCrouching ? FALL_G : GRAVITY) * dt;
+                    py += vy * dt;
                 }
-                p.el.style.transform = trans;
-                p.el.style.bottom = (p.y - cameraY) + 'px';
-            });
 
-            standingOn = null;
-            platforms.forEach(p => {
-                let pL = p.x + (p.baseW - p.currentW) / 2, pR = pL + p.currentW;
-                if (!p.dead && px + 22 > pL && px - 22 < pR) {
-                    let platTop = p.y + 15;
-                    if (p.type === 'seesaw') platTop -= Math.tan(p.angle * Math.PI / 180) * (px - (p.x + p.baseW / 2));
-                    if (vy <= 0 && (py >= platTop - 15 && py <= platTop + 15)) {
-                        standingOn = p; py = platTop; vy = 0; jumpCount = 0;
-                        if (p.type === 'danger') {
-                            p.shakeTimer++; p.el.classList.add('shaking');
-                            if (p.shakeTimer > 25) { p.dead = true; p.el.style.opacity = '0'; standingOn = null; }
-                        }
-                        if (p.type === 'seesaw') {
-                            let dist = px - (p.x + p.baseW / 2);
-                            p.angle += ( (dist / (p.baseW / 2) * 30) - p.angle) * 0.1;
-                            vx += p.angle * 0.012;
+                maxReachedY = Math.max(maxReachedY, py);
+                let screenPos = py - cameraY;
+                let dzTop = window.innerHeight * 0.65, dzBot = window.innerHeight * 0.35;
+
+                if (screenPos > dzTop) cameraY += (screenPos - dzTop) * 0.07 * dt;
+                else if (screenPos < dzBot) cameraY += (screenPos - dzBot) * 0.05 * dt;
+
+                score = Math.max(score, Math.floor(maxReachedY / 10) - 12);
+                scoreUI.innerText = `巔峰高度: ${score} m`;
+                if (score > highScore && highScore > 0) {
+                    bestUI.innerText = `刷新巔峰: ${score} m`;
+                    bestUI.classList.add('new-record-glow');
+                }
+
+                platforms.forEach(p => {
+                    let trans = `translateZ(0) `;
+                    if (p.type === 'expand' && !p.dead) {
+                        let factor = (Math.sin(frameCount * p.speed + p.phase) + 1) / 2;
+                        p.currentW = 60 + factor * (p.baseW * 2.5 - 60);
+                        trans += `scaleX(${p.currentW / p.baseW}) `;
+                    } else if (p.type === 'seesaw') {
+                        p.angle *= Math.pow(0.95, dt); trans += `rotate(${p.angle}deg) `;
+                    }
+                    p.el.style.transform = trans;
+                    p.el.style.bottom = (p.y - cameraY) + 'px';
+                });
+
+                standingOn = null;
+                platforms.forEach(p => {
+                    let pL = p.x + (p.baseW - p.currentW) / 2, pR = pL + p.currentW;
+                    if (!p.dead && px + 22 > pL && px - 22 < pR) {
+                        let platTop = p.y + 15;
+                        if (p.type === 'seesaw') platTop -= Math.tan(p.angle * Math.PI / 180) * (px - (p.x + p.baseW / 2));
+                        if (vy <= 0 && (py >= platTop - 15 && py <= platTop + 15)) {
+                            standingOn = p; py = platTop; vy = 0; jumpCount = 0;
+                            
+                            // --- 紅色危險平台：延長時間至 45 幀 ---
+                            if (p.type === 'danger') {
+                                p.shakeTimer += dt;
+                                p.el.classList.add('shaking');
+                                if (p.shakeTimer > 45) { // 加長反應時間（原 25）
+                                    p.dead = true; p.el.style.opacity = '0'; standingOn = null;
+                                }
+                            }
+                            
+                            if (p.type === 'seesaw') {
+                                let dist = px - (p.x + p.baseW / 2);
+                                p.angle += ( (dist / (p.baseW / 2) * 30) - p.angle) * 0.1 * dt;
+                                vx += p.angle * 0.012 * dt;
+                            }
                         }
                     }
-                }
-            });
+                });
 
-            if (nextPlatY - cameraY < window.innerHeight + 500) generateNextPlatform();
-            platforms = platforms.filter(p => { if (p.y < cameraY - 1000) { p.el.remove(); return false; } return true; });
-            if (py < cameraY - 800) gameOver();
-            draw();
-            loopId = requestAnimationFrame(update);
+                if (nextPlatY - cameraY < window.innerHeight + 500) generateNextPlatform();
+                platforms = platforms.filter(p => { if (p.y < cameraY - 1000) { p.el.remove(); return false; } return true; });
+                if (py < cameraY - 800) gameOver();
+                
+                draw();
+            }
         }
 
         function draw() {
@@ -235,7 +253,7 @@
         function gameOver() {
             isDead = true; overlay.style.display = 'flex';
             document.getElementById('final-score').innerText = `本次巔峰攀爬高度: ${score} m`;
-            let rank = "果凍初心者";
+            let rank = "果凍新手";
             if (score > 2500) rank = "🌌 宇宙傳說 (Space Legend)";
             else if (score > 1200) rank = "🧗 高空探險家 (High Altitude)";
             else if (score > 500) rank = "🏃 平地跳躍者 (Basic Jumper)";
@@ -246,13 +264,10 @@
                 document.getElementById('over-title').innerText = "🎉 突破巔峰！";
                 localStorage.setItem('jelly_high_score', score);
                 highScore = score;
-            } else {
-                recordMsg.innerText = `距離巔峰紀錄還差 ${highScore - score} m`;
-                document.getElementById('over-title').innerText = "失足墜落！";
-            }
+            } else { recordMsg.innerText = `距離巔峰紀錄還差 ${highScore - score} m`; document.getElementById('over-title').innerText = "失足墜落！"; }
         }
 
-        let m = { left: false, right: false }, isCrouching = false, jumpCount = 0, lastRelease = 0;
+        let jumpCount = 0, lastRelease = 0;
         function handleJump() {
             if (jumpCount >= 2 || isDead) return;
             hideTut();
@@ -265,15 +280,14 @@
         document.getElementById('reset-record-btn').onclick = () => {
             if(confirm("確定要清除最高紀錄，重新開始攀爬嗎？")) {
                 localStorage.removeItem('jelly_high_score');
-                highScore = 0;
-                bestUI.innerText = `最高紀錄: 0 m`;
+                highScore = 0; bestUI.innerText = `最高紀錄: 0 m`;
                 bestUI.classList.remove('new-record-glow');
                 alert("巔峰紀錄已歸零！");
             }
         };
 
         if (isTouch) {
-            const b = (id, k) => { document.getElementById(id).addEventListener('touchstart', (e)=>{e.preventDefault(); m[k]=true;}); document.getElementById(id).addEventListener('touchend', (e)=>{e.preventDefault(); m[k]=false;}); };
+            const b = (id, k) => { document.getElementById(id).addEventListener('touchstart', (e)=>{e.preventDefault(); m_keys[k]=true;}); document.getElementById(id).addEventListener('touchend', (e)=>{e.preventDefault(); m_keys[k]=false;}); };
             b('btn-left', 'left'); b('btn-right', 'right');
             let timer;
             document.getElementById('btn-action').addEventListener('touchstart', (e)=>{e.preventDefault(); timer = setTimeout(()=>isCrouching=true, 150);});
@@ -281,11 +295,11 @@
         }
         window.onkeydown = (e) => { 
             let k = e.key.toLowerCase(); if(k==='r') initGame(); if(isDead) return; 
-            hideTut(); if(k==='a') m.left=true; if(k==='d') m.right=true; if(k==='s') isCrouching=true; 
+            hideTut(); if(k==='a') m_keys.left=true; if(k==='d') m_keys.right=true; if(k==='s') isCrouching=true; 
             if(k===' '||k==='w'){e.preventDefault(); handleJump();} 
         };
         window.onkeyup = (e) => { 
-            let k = e.key.toLowerCase(); if(k==='a') m.left=false; if(k==='d') m.right=false; 
+            let k = e.key.toLowerCase(); if(k==='a') m_keys.left=false; if(k==='d') m_keys.right=false; 
             if(k==='s'){isCrouching=false; lastRelease=Date.now();} 
         };
         document.getElementById('restart-btn').onclick = initGame;
