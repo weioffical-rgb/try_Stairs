@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>果凍小人 - 從容攀爬版</title>
+    <title>果凍小人 - 巔峰挑戰</title>
     <style>
         body { margin: 0; padding: 0; overflow: hidden; background-color: #fce4ec; font-family: sans-serif; touch-action: none; user-select: none; }
         #game-container { width: 100vw; height: 100vh; position: relative; background: linear-gradient(180deg, #a1c4fd 0%, #c2e9fb 100%); }
@@ -26,8 +26,8 @@
         .new-record-glow { color: #f39c12; animation: glow 1s infinite alternate; }
         @keyframes glow { from { text-shadow: 0 0 2px #fff; } to { text-shadow: 0 0 10px #f39c12; } }
         
-        .platform { position: absolute; height: 15px; border-radius: 10px; border: 1px solid rgba(255,255,255,0.4); z-index: 5; background: rgba(255,255,255,0.7); transform-origin: center center; transition: opacity 0.2s; }
-        .danger { background: rgba(255, 82, 82, 0.7); border-color: #d32f2f; } /* 稍微加深一點紅色，增加對比 */
+        .platform { position: absolute; height: 15px; border-radius: 10px; border: 1px solid rgba(255,255,255,0.4); z-index: 5; background: rgba(255,255,255,0.7); transform-origin: center center; }
+        .danger { background: rgba(255, 82, 82, 0.7); }
         .expand { background: rgba(155, 89, 182, 0.7); }
         .seesaw { background: rgba(241, 196, 15, 0.7); border-color: #f39c12; }
         .shaking { animation: shake 0.1s infinite; }
@@ -42,7 +42,7 @@
         .btn { position: absolute; background: rgba(255, 255, 255, 0.6); border: 1px solid rgba(255, 255, 255, 0.8); display: flex; align-items: center; justify-content: center; pointer-events: auto; border-radius: 22px; font-weight: bold; }
         #btn-left { bottom: 25px; left: 15px; width: 75px; height: 75px; font-size: 24px; }
         #btn-right { bottom: 25px; left: 100px; width: 75px; height: 75px; font-size: 24px; }
-        #btn-action { bottom: 20px; right: 15px; width: 115px; height: 85px; border-radius: 35px; font-weight: bold; }
+        #btn-action { bottom: 20px; right: 15px; width: 115px; height: 85px; border-radius: 35px; }
     </style>
 </head>
 <body>
@@ -55,9 +55,9 @@
         </div>
 
         <div id="tutorial-overlay">
-            <h3 style="margin:0">⚖️ 從容攀爬挑戰</h3>
+            <h3 style="margin:0">⚖️ 巔峰攀爬挑戰</h3>
             <p id="tut-device-msg" style="margin: 15px 0; font-weight: 500;">載入中...</p>
-            <div style="color:#d69e2e; font-weight:bold; font-size: 14px;">✨ 更新：紅色平台崩塌時間大幅延長！</div>
+            <div style="color:#d69e2e; font-weight:bold; font-size: 14px;">✨ 技巧：鬆開蓄力後秒按跳躍可發動「超級跳」！</div>
             <p style="font-size:12px; margin-top:15px; opacity:0.6;">( 操作即開始 )</p>
         </div>
 
@@ -65,7 +65,6 @@
             <div id="rank-label">RANK: -</div>
             <h1 id="over-title">失足墜落！</h1>
             <p id="final-score" style="font-size: 18px; margin: 10px 0;"></p>
-            <p id="record-msg" style="color: #fff176; font-weight: bold;"></p>
             <button id="restart-btn">重新挑戰 (R)</button>
             <div id="reset-record-btn">清除最高紀錄</div>
         </div>
@@ -82,11 +81,7 @@
         const player = document.getElementById('player'), eyes = document.getElementById('eyes'), platBox = document.getElementById('plat-box'), scoreUI = document.getElementById('score-ui'), bestUI = document.getElementById('best-ui'), overlay = document.getElementById('overlay'), container = document.getElementById('game-container'), tutOverlay = document.getElementById('tutorial-overlay');
         
         let px, py, vx, vy, score, cameraY, nextPlatY, highScore, platforms = [], isDead = false, loopId = null, frameCount = 0, facingRight = true, standingOn = null, maxReachedY = 0, hasMoved = false, isCrouching = false;
-        
-        // --- 物理常數與靈動手感 ---
-        const GRAVITY = 0.72, FALL_G = 2.3, JUMP_P = 15.5, FRICTION = 0.86;
-        const MOVE_ACC = 1.6; 
-        
+        const GRAVITY = 0.72, FALL_G = 2.3, JUMP_P = 15.5, FRICTION = 0.86, MOVE_ACC = 1.6;
         let lastTime = 0;
 
         const isTouch = 'ontouchstart' in window || navigator.maxTouchPoints > 0;
@@ -95,7 +90,7 @@
             document.getElementById('mobile-ctrl').style.display = 'block';
             tutMsg.innerText = "按鈕移動，長按 ACTION 蓄力，點擊跳躍";
         } else {
-            tutMsg.innerText = "A/D 移動，Space/W 跳躍，S 鍵蓄力";
+            tutMsg.innerText = "A/D 移動，Space 跳躍，S 鍵蓄力";
         }
 
         function loadBest() {
@@ -117,7 +112,7 @@
             bestUI.classList.remove('new-record-glow');
             loadBest();
             spawnPlatform(window.innerWidth/2 - 100, 100, 200, 'normal');
-            for(let i=0; i<15; i++) generateNextPlatform();
+            for(let i=0; i<20; i++) generateNextPlatform();
             loopId = requestAnimationFrame(update);
         }
 
@@ -131,8 +126,7 @@
         }
 
         function generateNextPlatform() {
-            let mult = Math.max(1.8, 6 - (score / 40));
-            let randomW = (Math.random() * (mult - 1) + 1) * 50;
+            let randomW = (Math.random() * 3 + 1.5) * 50;
             const x = Math.random() * (window.innerWidth - (randomW * 1.5));
             let roll = Math.random(), type = 'normal';
             if (score > 100) {
@@ -145,7 +139,7 @@
         function triggerFX(isSuper) {
             const wave = document.createElement('div');
             wave.className = 'jump-wave' + (isSuper ? ' super-wave' : '');
-            wave.style.left = px + 'px'; wave.style.bottom = (py - cameraY) + 'px';
+            wave.style.left = px + 'px'; wave.style.bottom = Math.floor(py - cameraY) + 'px';
             container.appendChild(wave);
             setTimeout(() => wave.remove(), 400);
         }
@@ -155,20 +149,14 @@
         function update(timestamp) {
             if (isDead) return;
             loopId = requestAnimationFrame(update);
-
             if (!lastTime) lastTime = timestamp;
             let dt = (timestamp - lastTime) / (1000 / 60); 
             lastTime = timestamp;
-            if (dt > 2.5) dt = 2.5; 
+            if (dt > 2) dt = 2;
 
-            frameCount++;
-            let currentAcc = (isTouch ? MOVE_ACC * 0.7 : MOVE_ACC) * (isCrouching ? 0.6 : 1) * dt;
-            
-            if (m_keys.left) { vx -= currentAcc; facingRight = false; hideTut(); }
-            if (m_keys.right) { vx += currentAcc; facingRight = true; hideTut(); }
-            
-            vx *= Math.pow(FRICTION, dt); 
-            px += vx * dt;
+            if (m_keys.left) { vx -= MOVE_ACC * dt; facingRight = false; hideTut(); }
+            if (m_keys.right) { vx += MOVE_ACC * dt; facingRight = true; hideTut(); }
+            vx *= Math.pow(FRICTION, dt); px += vx * dt;
             if (px < 0) px = window.innerWidth; if (px > window.innerWidth) px = 0;
             
             if (standingOn && standingOn.type === 'seesaw') {
@@ -182,29 +170,27 @@
 
             maxReachedY = Math.max(maxReachedY, py);
             let screenPos = py - cameraY;
-            let dzTop = window.innerHeight * 0.65, dzBot = window.innerHeight * 0.35;
-
-            if (screenPos > dzTop) cameraY += (screenPos - dzTop) * 0.08 * dt;
-            else if (screenPos < dzBot) cameraY += (screenPos - dzBot) * 0.05 * dt;
+            if (screenPos > window.innerHeight * 0.65) cameraY += (screenPos - window.innerHeight * 0.65) * 0.08 * dt;
+            else if (screenPos < window.innerHeight * 0.35) cameraY += (screenPos - window.innerHeight * 0.35) * 0.05 * dt;
 
             score = Math.max(score, Math.floor(maxReachedY / 10) - 12);
             scoreUI.innerText = `巔峰高度: ${score} m`;
-            if (score > highScore && highScore > 0) {
-                bestUI.innerText = `刷新巔峰: ${score} m`;
-                bestUI.classList.add('new-record-glow');
-            }
 
-            platforms.forEach(p => {
+            if (nextPlatY - cameraY < window.innerHeight + 1200) generateNextPlatform(); // 超前生成
+
+            platforms = platforms.filter(p => {
+                if (p.y < cameraY - 2000) { p.el.remove(); return false; } // 延後回收
                 let trans = `translateZ(0) `;
                 if (p.type === 'expand' && !p.dead) {
-                    let factor = (Math.sin(frameCount * p.speed + p.phase) + 1) / 2;
+                    let factor = (Math.sin(performance.now() * 0.004 + p.phase) + 1) / 2;
                     p.currentW = 60 + factor * (p.baseW * 2.5 - 60);
                     trans += `scaleX(${p.currentW / p.baseW}) `;
                 } else if (p.type === 'seesaw') {
                     p.angle *= Math.pow(0.95, dt); trans += `rotate(${p.angle}deg) `;
                 }
                 p.el.style.transform = trans;
-                p.el.style.bottom = (p.y - cameraY) + 'px';
+                p.el.style.bottom = Math.floor(p.y - cameraY) + 'px';
+                return true;
             });
 
             standingOn = null;
@@ -213,36 +199,28 @@
                 if (!p.dead && px + 22 > pL && px - 22 < pR) {
                     let platTop = p.y + 15;
                     if (p.type === 'seesaw') platTop -= Math.tan(p.angle * Math.PI / 180) * (px - (p.x + p.baseW / 2));
-                    if (vy <= 0 && (py >= platTop - 15 && py <= platTop + 15)) {
+                    if (vy <= 0 && py >= platTop - 15 && py <= platTop + 15) {
                         standingOn = p; py = platTop; vy = 0; jumpCount = 0;
-                        
-                        // --- 紅色危險平台：消失時間延長至 70 幀 ---
                         if (p.type === 'danger') {
-                            p.shakeTimer += dt;
-                            p.el.classList.add('shaking');
-                            if (p.shakeTimer > 70) { // 大幅加長（原 45）
-                                p.dead = true; p.el.style.opacity = '0'; standingOn = null;
-                            }
+                            p.shakeTimer += dt; p.el.classList.add('shaking');
+                            if (p.shakeTimer > 70) { p.dead = true; p.el.style.opacity = '0'; standingOn = null; }
                         }
-                        
                         if (p.type === 'seesaw') {
                             let dist = px - (p.x + p.baseW / 2);
-                            p.angle += ( (dist / (p.baseW / 2) * 30) - p.angle) * 0.1 * dt;
+                            p.angle += ((dist / (p.baseW / 2) * 30) - p.angle) * 0.1 * dt;
                             vx += p.angle * 0.012 * dt;
                         }
                     }
                 }
             });
 
-            if (nextPlatY - cameraY < window.innerHeight + 500) generateNextPlatform();
-            platforms = platforms.filter(p => { if (p.y < cameraY - 1000) { p.el.remove(); return false; } return true; });
             if (py < cameraY - 800) gameOver();
-            
             draw();
         }
 
         function draw() {
-            player.style.left = px + 'px'; player.style.bottom = (py - cameraY) + 'px';
+            player.style.left = px + 'px'; 
+            player.style.bottom = Math.floor(py - cameraY) + 'px';
             let sx = isCrouching ? 1.35 : (vy !== 0 ? 0.85 : 1), sy = 1/sx;
             let rot = (standingOn && standingOn.type === 'seesaw') ? standingOn.angle : 0;
             player.style.transform = `translateX(-50%) scale(${sx}, ${sy}) rotate(${-rot}deg) translateZ(0)`;
@@ -251,19 +229,11 @@
 
         function gameOver() {
             isDead = true; overlay.style.display = 'flex';
-            document.getElementById('final-score').innerText = `本次巔峰攀爬高度: ${score} m`;
+            document.getElementById('final-score').innerText = `高度: ${score} m`;
             let rank = "果凍新手";
-            if (score > 2500) rank = "🌌 宇宙傳說 (Space Legend)";
-            else if (score > 1200) rank = "🧗 高空探險家 (High Altitude)";
-            else if (score > 500) rank = "🏃 平地跳躍者 (Basic Jumper)";
+            if (score > 2500) rank = "🌌 宇宙傳說"; else if (score > 1200) rank = "🧗 高空探險家"; else if (score > 500) rank = "🏃 平地跳躍者";
             document.getElementById('rank-label').innerText = `RANK: ${rank}`;
-            const recordMsg = document.getElementById('record-msg');
-            if (score > highScore) {
-                recordMsg.innerText = "🎊 創下新紀錄了！ 🎊";
-                document.getElementById('over-title').innerText = "🎉 突破巔峰！";
-                localStorage.setItem('jelly_high_score', score);
-                highScore = score;
-            } else { recordMsg.innerText = `距離巔峰紀錄還差 ${highScore - score} m`; document.getElementById('over-title').innerText = "失足墜落！"; }
+            if (score > highScore) localStorage.setItem('jelly_high_score', score);
         }
 
         let jumpCount = 0, lastRelease = 0;
@@ -277,30 +247,20 @@
         }
 
         document.getElementById('reset-record-btn').onclick = () => {
-            if(confirm("確定要清除最高紀錄，重新開始攀爬嗎？")) {
+            if(confirm("確定要清除最高紀錄？")) {
                 localStorage.removeItem('jelly_high_score');
                 highScore = 0; bestUI.innerText = `最高紀錄: 0 m`;
-                bestUI.classList.remove('new-record-glow');
-                alert("巔峰紀錄已歸零！");
             }
         };
 
         if (isTouch) {
-            const b = (id, k) => { document.getElementById(id).addEventListener('touchstart', (e)=>{e.preventDefault(); m_keys[k]=true;}); document.getElementById(id).addEventListener('touchend', (e)=>{e.preventDefault(); m_keys[k]=false;}); };
-            b('btn-left', 'left'); b('btn-right', 'right');
-            let timer;
-            document.getElementById('btn-action').addEventListener('touchstart', (e)=>{e.preventDefault(); timer = setTimeout(()=>isCrouching=true, 150);});
-            document.getElementById('btn-action').addEventListener('touchend', (e)=>{e.preventDefault(); clearTimeout(timer); if(!isCrouching) handleJump(); else {isCrouching=false; lastRelease=Date.now();}});
+            const btn = (id, k) => { document.getElementById(id).ontouchstart=(e)=>{e.preventDefault(); m_keys[k]=true;}; document.getElementById(id).ontouchend=(e)=>{e.preventDefault(); m_keys[k]=false;}; };
+            btn('btn-left', 'left'); btn('btn-right', 'right');
+            let t; document.getElementById('btn-action').ontouchstart=(e)=>{e.preventDefault(); t=setTimeout(()=>isCrouching=true, 150);};
+            document.getElementById('btn-action').ontouchend=(e)=>{e.preventDefault(); clearTimeout(t); if(!isCrouching) handleJump(); else {isCrouching=false; lastRelease=Date.now();}};
         }
-        window.onkeydown = (e) => { 
-            let k = e.key.toLowerCase(); if(k==='r') initGame(); if(isDead) return; 
-            hideTut(); if(k==='a') m_keys.left=true; if(k==='d') m_keys.right=true; if(k==='s') isCrouching=true; 
-            if(k===' '||k==='w'){e.preventDefault(); handleJump();} 
-        };
-        window.onkeyup = (e) => { 
-            let k = e.key.toLowerCase(); if(k==='a') m_keys.left=false; if(k==='d') m_keys.right=false; 
-            if(k==='s'){isCrouching=false; lastRelease=Date.now();} 
-        };
+        window.onkeydown = (e) => { let k = e.key.toLowerCase(); if(k==='r') initGame(); if(isDead) return; if(k==='a') m_keys.left=true; if(k==='d') m_keys.right=true; if(k==='s') isCrouching=true; if(k===' '||k==='w') handleJump(); };
+        window.onkeyup = (e) => { let k = e.key.toLowerCase(); if(k==='a') m_keys.left=false; if(k==='d') m_keys.right=false; if(k==='s') {isCrouching=false; lastRelease=Date.now();} };
         document.getElementById('restart-btn').onclick = initGame;
         initGame();
     </script>
