@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>果凍小人 - 巔峰攀爬</title>
+    <title>果凍小人 - 巔峰爬梯</title>
     <style>
         body { margin: 0; padding: 0; overflow: hidden; background-color: #fce4ec; font-family: sans-serif; touch-action: none; user-select: none; }
         #game-container { width: 100vw; height: 100vh; position: relative; background: linear-gradient(180deg, #a1c4fd 0%, #c2e9fb 100%); }
@@ -16,6 +16,7 @@
             box-shadow: 0 5px 10px rgba(255,154,158,0.3); 
             will-change: transform, left, bottom; 
         }
+        /* 嚴格遵照你提供的原始眼睛樣式 */
         #eyes { position: absolute; top: 12px; width: 10px; height: 10px; background: white; border-radius: 50%; transition: left 0.1s ease; }
         
         /* UI 系統 */
@@ -39,6 +40,11 @@
         .seesaw { background: rgba(241, 196, 15, 0.7); border-color: #f39c12; }
         .ice { background: linear-gradient(135deg, #001a66 0%, #0044ff 100%); border: 2px solid #ffffff; box-shadow: 0 0 25px rgba(0, 51, 204, 0.9); }
         
+        /* 🌵 仙人掌特別樣式 */
+        .spiky { background: #1b5e20; border: none; }
+        .spiky::before, .spiky::after { content: '▲▲▲▲'; position: absolute; top: -14px; color: #ff1744; font-size: 12px; font-weight: bold; letter-spacing: 2px; }
+        .spiky::before { left: 10px; } .spiky::after { right: 10px; }
+
         .shaking { animation: shake 0.1s infinite; }
         @keyframes shake { 0% { transform: translateX(2px); } 100% { transform: translateX(-2px); } }
         
@@ -76,9 +82,9 @@
         </div>
 
         <div id="tutorial-overlay">
-            <h3 style="margin:0">⚖️ 巔峰挑戰</h3>
+            <h3 style="margin:0">⚖️ 絕望巔峰</h3>
             <p id="tut-device-msg">載入中...</p>
-            <div style="color:#d69e2e; font-weight:bold;">⚠️ 提醒：已增加蹺蹺板傾斜至 55 度，且增加冰面！</div>
+            <div style="color:#d69e2e; font-weight:bold;">⚠️ 提醒：冰塊變長且傾斜 ±30 度，仙人掌會斜向擊飛！</div>
             <p style="font-size:12px; margin-top:10px; opacity:0.6;">( 按下任何鍵開始 )</p>
         </div>
 
@@ -104,10 +110,7 @@
         
         let px, py, vx, vy, score, cameraY, nextPlatY, highScore, platforms = [], isDead = false, loopId = null, frameCount = 0, facingRight = true, standingOn = null, maxReachedY = 0, hasMoved = false, isCrouching = false, lastTime = 0, m_keys = { left: false, right: false };
         
-        // --- 物理核心常數 ---
-        const GRAVITY = 0.72, FALL_G = 2.3, JUMP_P = 15.5;
-        const FRICTION_NORMAL = 0.86, FRICTION_ICE = 0.9992; 
-        const MOVE_ACC_NORMAL = 1.6;
+        const GRAVITY = 0.72, FALL_G = 2.3, JUMP_P = 15.5, FRICTION_NORMAL = 0.86, FRICTION_ICE = 0.9992, MOVE_ACC = 1.6;
 
         const isTouch = 'ontouchstart' in window || navigator.maxTouchPoints > 0;
         document.getElementById('tut-device-msg').innerText = isTouch ? "左右鈕移動，長按 ACTION 蓄力" : "A/D 移動，Space 跳躍，S 蓄力";
@@ -133,30 +136,33 @@
         function spawnPlatform(x, y, baseW, type) {
             const d = document.createElement('div'); d.className = 'platform ' + type;
             let actualW = (type === 'seesaw' ? baseW * 2 : baseW);
+            if (type === 'ice' && actualW < 200) actualW = 200;
+            if (type === 'spiky' && actualW < 220) actualW = 220;
             d.style.width = actualW + 'px'; d.style.left = x + 'px'; platBox.appendChild(d);
-            platforms.push({ x, y, baseW: actualW, currentW: actualW, type, el: d, speed: 0.065, dead: false, shakeTimer: 0, angle: 0, phase: Math.random()*6 });
+            let tilt = (type === 'ice') ? (Math.random() * 60 - 30) : 0;
+            platforms.push({ x, y, baseW: actualW, currentW: actualW, type, el: d, dead: false, shakeTimer: 0, angle: tilt, phase: Math.random()*6 });
         }
 
         function generateNextPlatform() {
-            let mult = Math.max(1.8, 6 - (score / 40));
+            let mult = Math.max(1.1, 5.0 - (score / 60));
             let randomW = (Math.random() * (mult - 1) + 1) * 50;
             const x = Math.random() * (window.innerWidth - (randomW * 1.5));
             let roll = Math.random(), type = 'normal';
-            if (score > 20) {
-                if (roll > 0.85) type = 'expand'; 
-                else if (roll > 0.52) type = 'ice';    
-                else if (roll > 0.38) type = 'seesaw'; 
-                else if (roll > 0.22) type = 'danger';
+            if (score > 15) {
+                if (roll > 0.75) type = 'spiky';
+                else if (roll > 0.55) type = 'ice';    
+                else if (roll > 0.35) type = 'expand'; 
+                else if (roll > 0.18) type = 'seesaw'; 
+                else if (roll > 0.06) type = 'danger';
             }
             spawnPlatform(x, nextPlatY, randomW, type);
-            nextPlatY += 95 + Math.random() * 30;
+            nextPlatY += 95 + Math.random() * 45;
         }
 
         function triggerFX(isSuper) {
             const wave = document.createElement('div'); 
             wave.className = 'jump-wave' + (isSuper ? ' super-wave' : '');
-            wave.style.left = px + 'px'; 
-            wave.style.bottom = Math.floor(py - cameraY) + 'px';
+            wave.style.left = px + 'px'; wave.style.bottom = Math.floor(py - cameraY) + 'px';
             container.appendChild(wave); 
             setTimeout(() => wave.remove(), 400);
         }
@@ -167,49 +173,39 @@
             let dt = Math.min((timestamp - lastTime) / (1000 / 60), 2); lastTime = timestamp;
 
             let onIce = standingOn && standingOn.type === 'ice';
-            let acc = MOVE_ACC_NORMAL * (isCrouching ? 0.6 : 1) * dt;
-
-            // 冰面慣性煞車邏輯
-            if (m_keys.left) { 
-                let power = (onIce && vx > 0) ? 0.25 : 1.0;
-                vx -= acc * power; facingRight = false; hideTut(); 
-            }
-            if (m_keys.right) { 
-                let power = (onIce && vx < 0) ? 0.25 : 1.0;
-                vx += acc * power; facingRight = true; hideTut(); 
-            }
+            let acc = MOVE_ACC * (isCrouching ? 0.6 : 1) * dt;
+            if (m_keys.left) { vx -= acc * (onIce && vx > 0 ? 0.25 : 1); facingRight = false; hideTut(); }
+            if (m_keys.right) { vx += acc * (onIce && vx < 0 ? 0.25 : 1); facingRight = true; hideTut(); }
             
+            if (standingOn) { vx += Math.sin(standingOn.angle * Math.PI / 180) * 0.48 * dt; }
             vx *= Math.pow((onIce ? FRICTION_ICE : FRICTION_NORMAL), dt); 
             px += vx * dt;
             if (px < 0) px = window.innerWidth; if (px > window.innerWidth) px = 0;
             
-            if (standingOn?.type === 'seesaw') {
-                py = standingOn.y + 15 - Math.tan(standingOn.angle * Math.PI / 180) * (px - (standingOn.x + standingOn.baseW / 2));
-                vy = 0;
+            if (standingOn) {
+                let platTop = standingOn.y + 15;
+                if (standingOn.type === 'seesaw' || standingOn.type === 'ice') platTop -= Math.tan(standingOn.angle * Math.PI / 180) * (px - (standingOn.x + standingOn.baseW / 2));
+                py = platTop; vy = 0;
             } else { vy -= (isCrouching ? FALL_G : GRAVITY) * dt; py += vy * dt; }
 
             maxReachedY = Math.max(maxReachedY, py);
             let screenPos = py - cameraY;
-            // 鏡頭鎖定在約 60% 位置
             if (screenPos > window.innerHeight * 0.65) cameraY += (screenPos - window.innerHeight * 0.65) * 0.08 * dt;
             else if (screenPos < window.innerHeight * 0.35) cameraY += (screenPos - window.innerHeight * 0.35) * 0.05 * dt;
 
             score = Math.max(score, Math.floor(maxReachedY / 10) - 12);
             scoreUI.innerText = `巔峰高度: ${score} m`;
-            if (score > highScore && highScore > 0) {
-                bestUI.innerText = `刷新巔峰: ${score} m`;
-                bestUI.classList.add('new-record-glow');
-            }
+            if (score > highScore && highScore > 0) { bestUI.innerText = `刷新巔峰: ${score} m`; bestUI.classList.add('new-record-glow'); }
 
             if (nextPlatY - cameraY < window.innerHeight + 1200) generateNextPlatform();
-
             platforms = platforms.filter(p => {
                 if (p.y < cameraY - 2000) { p.el.remove(); return false; } 
                 let trans = `translateZ(0) `;
                 if (p.type === 'expand' && !p.dead) {
-                    p.currentW = 60 + ((Math.sin(performance.now() * 0.004 + p.phase) + 1) / 2) * (p.baseW * 2.5 - 60);
+                    let f = (Math.sin(performance.now()*0.004+p.phase)+1)/2;
+                    p.currentW = 60 + f * (p.baseW*2.5 - 60);
                     trans += `scaleX(${p.currentW / p.baseW}) `;
-                } else if (p.type === 'seesaw') { p.angle *= Math.pow(0.95, dt); trans += `rotate(${p.angle}deg) `; }
+                } else { trans += `rotate(${p.angle}deg) `; }
                 p.el.style.transform = trans; p.el.style.bottom = Math.floor(p.y - cameraY) + 'px';
                 return true;
             });
@@ -219,17 +215,19 @@
                 let pL = p.x + (p.baseW - p.currentW) / 2, pR = pL + p.currentW;
                 if (!p.dead && px + 22 > pL && px - 22 < pR) {
                     let platTop = p.y + 15;
-                    if (p.type === 'seesaw') platTop -= Math.tan(p.angle * Math.PI / 180) * (px - (p.x + p.baseW / 2));
+                    if (p.type === 'seesaw' || p.type === 'ice') platTop -= Math.tan(p.angle * Math.PI / 180) * (px - (p.x + p.baseW / 2));
                     if (vy <= 0 && py >= platTop - 20 && py <= platTop + 20) {
                         standingOn = p; py = platTop; vy = 0; jumpCount = 0;
+                        if (p.type === 'spiky') {
+                            let rel = (px - pL) / p.currentW;
+                            if (rel < 0.35 || rel > 0.65) { vx = (rel < 0.5 ? -48 : 48); vy = 18; standingOn = null; }
+                        }
                         if (p.type === 'danger') {
                             p.shakeTimer += dt; p.el.classList.add('shaking');
                             if (p.shakeTimer > 70) { p.dead = true; p.el.style.opacity = '0'; standingOn = null; }
                         } else if (p.type === 'seesaw') {
-                            // 蹺蹺板傾斜 55 度
                             let dist = px - (p.x + p.baseW / 2);
                             p.angle += ((dist / (p.baseW / 2) * 55) - p.angle) * 0.15 * dt;
-                            vx += p.angle * 0.015 * dt;
                         }
                     }
                 }
@@ -238,62 +236,41 @@
         }
 
         function draw() {
-            player.style.left = px + 'px'; 
-            player.style.bottom = Math.floor(py - cameraY) + 'px';
-            let sx = isCrouching ? 1.35 : (vy !== 0 ? 0.85 : 1);
+            player.style.left = px + 'px'; player.style.bottom = Math.floor(py - cameraY) + 'px';
+            let sx = isCrouching ? 1.45 : (vy !== 0 ? 0.85 : 1);
             player.style.transform = `translateX(-50%) scale(${sx}, ${1/sx}) rotate(${- (standingOn?.angle || 0)}deg) translateZ(0)`;
             eyes.style.left = facingRight ? '32px' : '8px';
         }
 
         function gameOver() { 
-            isDead = true; overlay.style.display = 'flex'; 
-            document.getElementById('final-score').innerText = `本次攀爬高度: ${score} m`;
-            
-            let rank = "果凍初心者";
-            if (score > 2500) rank = "🌌 宇宙傳說 (Space Legend)";
-            else if (score > 1200) rank = "🧗 高空探險家 (High Altitude)";
-            else if (score > 500) rank = "🏃 平地跳躍者 (Basic Jumper)";
-            document.getElementById('rank-label').innerText = `RANK: ${rank}`;
-
+            isDead = true; overlay.style.display = 'flex'; document.getElementById('final-score').innerText = `本次最終高度: ${score} m`;
+            let r = "💩 Beginner";
+            if (score > 50000) r = "👁️ THE GOD"; else if (score > 20000) r = "🛸 GALAXY"; else if (score > 10000) r = "🌌 SPACE"; else if (score > 5000) r = "🏔️ KING"; else if (score > 2000) r = "🧗 ELITE"; else if (score > 500) r = "🏃 JUMPER";
+            document.getElementById('rank-label').innerText = `RANK: ${r}`;
             const rMsg = document.getElementById('record-msg');
-            if (score > highScore) {
-                rMsg.innerText = "🎊 創下新紀錄了！ 🎊";
-                localStorage.setItem('jelly_high_score', score);
-                highScore = score;
-            } else {
-                rMsg.innerText = `距離紀錄還差 ${highScore - score} m`;
-            }
+            if (score > highScore) { rMsg.innerText = "🎊 刷新歷史紀錄！ 🎊"; localStorage.setItem('jelly_high_score', score); highScore = score; }
+            else { rMsg.innerText = `距離紀錄還差 ${highScore - score} m`; }
         }
 
         let jumpCount = 0, lastRel = 0;
         function handleJump() {
             if (jumpCount >= 2 || isDead) return;
-            hideTut(); 
-            let pwr = JUMP_P, isS = false, now = Date.now();
-            if (jumpCount === 0 && now - lastRel < 250 && !isCrouching) { pwr *= 1.4; isS = true; }
-            triggerFX(isS); 
-            vy = pwr; standingOn = null; jumpCount++; isCrouching = false;
+            hideTut(); let pwr = JUMP_P, isS = false, now = Date.now();
+            if (jumpCount === 0 && now - lastRel < 250 && !isCrouching) { pwr *= 1.45; isS = true; }
+            triggerFX(isS); vy = pwr; standingOn = null; jumpCount++; isCrouching = false;
         }
-
-        // 清除紀錄邏輯
-        document.getElementById('reset-record-btn').onclick = () => {
-            if(confirm("確定要清除最高紀錄嗎？清除後將無法復原。")) {
-                localStorage.removeItem('jelly_high_score');
-                highScore = 0;
-                bestUI.innerText = `最高紀錄: 0 m`;
-                bestUI.classList.remove('new-record-glow');
-            }
-        };
 
         if (isTouch) {
             const b = (id, k) => { document.getElementById(id).addEventListener('touchstart', (e)=>{e.preventDefault(); m_keys[k]=true;}); document.getElementById(id).addEventListener('touchend', (e)=>{e.preventDefault(); m_keys[k]=false;}); };
             b('btn-left', 'left'); b('btn-right', 'right');
-            let t; document.getElementById('btn-action').addEventListener('touchstart', (e)=>{e.preventDefault(); t=setTimeout(()=>isCrouching=true, 150);});
+            let t; document.getElementById('btn-action').addEventListener('touchstart', (e)=>{e.preventDefault(); t=setTimeout(()=>isCrouching=true, 180);});
             document.getElementById('btn-action').addEventListener('touchend', (e)=>{e.preventDefault(); clearTimeout(t); if(!isCrouching) handleJump(); else {isCrouching=false; lastRel=Date.now();}});
         }
+
+        document.getElementById('reset-record-btn').onclick = () => { if(confirm("清除紀錄？")) { localStorage.removeItem('jelly_high_score'); highScore = 0; initGame(); } };
+        document.getElementById('restart-btn').onclick = initGame;
         window.onkeydown = (e) => { let k = e.key.toLowerCase(); if(k==='r') initGame(); if(isDead) return; if(k==='a') m_keys.left=true; if(k==='d') m_keys.right=true; if(k==='s') isCrouching=true; if(k===' '||k==='w') {e.preventDefault(); handleJump();} };
         window.onkeyup = (e) => { let k = e.key.toLowerCase(); if(k==='a') m_keys.left=false; if(k==='d') m_keys.right=false; if(k==='s') {isCrouching=false; lastRel=Date.now();} };
-        document.getElementById('restart-btn').onclick = initGame; 
         initGame();
     </script>
 </body>
