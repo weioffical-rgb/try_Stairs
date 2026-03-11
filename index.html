@@ -13,41 +13,57 @@
             background: linear-gradient(135deg, #ff9a9e 0%, #fecfef 100%);
             position: absolute; bottom: 0; left: 0;
             transform-origin: bottom center; border-radius: 14px; z-index: 100;
-            box-shadow: 0 8px 15px rgba(255, 154, 158, 0.3);
+            box-shadow: 0 5px 10px rgba(255, 154, 158, 0.3);
+            /* 強制開啟硬體加速 */
+            will-change: transform, left, bottom;
             transform: translateZ(0);
         }
-        #eyes { position: absolute; top: 12px; width: 10px; height: 10px; background: white; border-radius: 50%; }
+        #eyes { position: absolute; top: 12px; width: 10px; height: 10px; background: white; border-radius: 50%; transition: left 0.1s ease; }
 
         #ui-header { position: absolute; top: 25px; width: 100%; text-align: center; z-index: 200; pointer-events: none; }
-        .score-box { display: inline-block; background: rgba(255,255,255,0.6); color: #5d6d7e; padding: 8px 25px; border-radius: 20px; font-weight: bold; font-size: 18px; backdrop-filter: blur(5px); }
+        .score-box { display: inline-block; background: rgba(255,255,255,0.85); color: #5d6d7e; padding: 8px 25px; border-radius: 20px; font-weight: bold; font-size: 18px; }
         .best-score { font-size: 14px; opacity: 0.8; margin-top: 5px; }
+
+        .milestone {
+            position: absolute; width: 100%; height: 2px;
+            background: rgba(255, 255, 255, 0.6);
+            color: #5d6d7e; font-weight: bold; font-size: 12px;
+            display: flex; align-items: center; justify-content: center;
+            z-index: 1; pointer-events: none;
+        }
 
         #tutorial-overlay {
             position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%);
-            background: rgba(255, 255, 255, 0.7); backdrop-filter: blur(12px);
-            padding: 25px 40px; border-radius: 30px; text-align: center; color: #4a5568; z-index: 400; transition: opacity 0.4s; width: 80%; max-width: 350px; border: 1px solid rgba(255,255,255,0.5);
+            background: rgba(255, 255, 255, 0.95);
+            padding: 25px 40px; border-radius: 30px; text-align: center; color: #4a5568; z-index: 400; transition: opacity 0.4s; width: 80%; max-width: 350px; border: 1px solid rgba(0,0,0,0.05);
         }
-        .super-tip { color: #d69e2e; font-weight: bold; margin-top: 10px; font-size: 14px; padding: 5px; border-radius: 10px; background: rgba(255,255,255,0.3); }
 
-        .platform { position: absolute; height: 15px; border-radius: 10px; border: 1px solid rgba(255,255,255,0.3); z-index: 5; background: rgba(255, 255, 255, 0.5); backdrop-filter: blur(3px); transform: translateZ(0); }
-        .danger { background: rgba(255, 82, 82, 0.5); border-color: #ff5252; }
-        .expand { background: rgba(155, 89, 182, 0.5); border-color: #8e44ad; }
+        .platform { 
+            position: absolute; height: 15px; border-radius: 10px; border: 1px solid rgba(255,255,255,0.4); z-index: 5; 
+            background: rgba(255, 255, 255, 0.7); 
+            /* 效能核心：固定寬度配合 transform-origin */
+            transform-origin: center center;
+            will-change: transform;
+            transform: translateZ(0); 
+        }
+        .danger { background: rgba(255, 82, 82, 0.7); border-color: #ff5252; }
+        .expand { background: rgba(155, 89, 182, 0.7); border-color: #8e44ad; }
+        
         .shaking { animation: shake 0.1s infinite; }
         @keyframes shake { 0% { transform: translateX(2px) translateZ(0); } 100% { transform: translateX(-2px) translateZ(0); } }
 
         .jump-wave { position: absolute; left: 50%; bottom: -15px; width: 40px; height: 15px; border: 3px solid rgba(255,255,255,0.8); border-radius: 50%; pointer-events: none; animation: wave 0.4s forwards; z-index: -1; }
-        .super-wave { border-color: #fff176; box-shadow: 0 0 25px #fff59d; border-width: 6px; }
+        .super-wave { border-color: #fff176; box-shadow: 0 0 15px #fff59d; border-width: 6px; }
         @keyframes wave { 0% { transform: translateX(-50%) scale(0.1); opacity: 1; } 100% { transform: translateX(-50%) scale(3.5); opacity: 0; } }
 
         #overlay {
             position: absolute; top: 0; left: 0; width: 100%; height: 100%;
-            background: rgba(0,0,0,0.4); backdrop-filter: blur(8px);
-            display: none; flex-direction: column; align-items: center; justify-content: center; z-index: 500; color: white;
+            background: rgba(0,0,0,0.5); display: none; flex-direction: column; align-items: center; justify-content: center; z-index: 500; color: white;
         }
         #restart-btn { background: #ff9a9e; color: white; border: none; padding: 15px 40px; border-radius: 30px; font-size: 20px; font-weight: bold; margin-top: 20px; cursor: pointer; }
 
         .mobile-ui { position: absolute; width: 100%; height: 100%; top: 0; left: 0; z-index: 300; pointer-events: none; display: none; }
-        .btn { position: absolute; background: rgba(255, 255, 255, 0.4); backdrop-filter: blur(8px); border: 1px solid rgba(255, 255, 255, 0.6); display: flex; align-items: center; justify-content: center; pointer-events: auto; border-radius: 22px; }
+        .btn { position: absolute; background: rgba(255, 255, 255, 0.6); border: 1px solid rgba(255, 255, 255, 0.8); display: flex; align-items: center; justify-content: center; pointer-events: auto; border-radius: 22px; }
         #btn-left { bottom: 25px; left: 15px; width: 75px; height: 75px; font-size: 24px; }
         #btn-right { bottom: 25px; left: 100px; width: 75px; height: 75px; font-size: 24px; }
         #btn-action { bottom: 20px; right: 15px; width: 115px; height: 85px; border-radius: 35px; font-weight: bold; }
@@ -61,19 +77,17 @@
                 <div id="best-ui" class="best-score">最高: 0 m</div>
             </div>
         </div>
-
         <div id="tutorial-overlay">
-            <h3 style="margin:0">🎮 準備好了嗎？</h3>
+            <h3 style="margin:0">🎮 效能優化挑戰</h3>
             <p id="tut-msg">A/D 移動，Space 跳躍，S 蹲下</p>
-            <div class="super-tip">✨ 蓄力跳：鬆開蹲下後秒按跳躍！</div>
-            <p style="font-size:12px; margin-top:15px; opacity:0.6;">( 按下任何鍵即刻出發 )</p>
+            <div style="color:#d69e2e; font-weight:bold;">✨ 蓄力跳：鬆開蹲下後秒按跳躍！</div>
         </div>
-
         <div id="overlay">
             <h1 id="over-title">摔下去了！</h1>
             <p id="final-score"></p>
             <button id="restart-btn">再試一次 (R)</button>
         </div>
+        <div id="best-milestone" class="milestone" style="display:none;">--- 🏆 BEST RECORD ---</div>
         <div id="player"><div id="eyes"></div></div>
         <div id="plat-box"></div>
         <div class="mobile-ui" id="mobile-ctrl">
@@ -84,9 +98,9 @@
     </div>
 
     <script>
-        const player = document.getElementById('player'), eyes = document.getElementById('eyes'), platBox = document.getElementById('plat-box'), scoreUI = document.getElementById('score-ui'), bestUI = document.getElementById('best-ui'), tutOverlay = document.getElementById('tutorial-overlay'), overlay = document.getElementById('overlay');
+        const player = document.getElementById('player'), eyes = document.getElementById('eyes'), platBox = document.getElementById('plat-box'), scoreUI = document.getElementById('score-ui'), bestUI = document.getElementById('best-ui'), tutOverlay = document.getElementById('tutorial-overlay'), overlay = document.getElementById('overlay'), milestoneLine = document.getElementById('best-milestone');
         
-        let px, py, vx, vy, score, cameraY, nextPlatY, highScore, platforms = [], isDead = false, loopId = null, frameCount = 0, hasMoved = false;
+        let px, py, vx, vy, score, cameraY, nextPlatY, highScore, platforms = [], isDead = false, loopId = null, frameCount = 0, hasMoved = false, facingRight = true;
         
         const GRAVITY = 0.72, FALL_G = 2.3, JUMP_P = 15.5, FRICTION = 0.88;
         const isTouch = 'ontouchstart' in window || navigator.maxTouchPoints > 0;
@@ -95,62 +109,54 @@
             document.getElementById('tut-msg').innerText = "左右箭頭移動，長按 ACTION 蓄力";
         }
 
-        // 歷史紀錄
         function loadBest() {
             const saved = localStorage.getItem('jelly_high_score');
             highScore = saved ? parseInt(saved, 10) : 0;
             bestUI.innerText = `最高: ${highScore} m`;
+            if (highScore > 0) {
+                milestoneLine.style.display = 'flex';
+                milestoneLine.innerText = `--- 🏆 BEST RECORD ${highScore}m ---`;
+            }
         }
         loadBest();
 
         function initGame() {
             if (loopId) cancelAnimationFrame(loopId);
-            isDead = false; frameCount = 0; px = window.innerWidth / 2; py = 120; vx = 0; vy = 0; score = 0; cameraY = 0; nextPlatY = 220; platforms = [];
+            isDead = false; frameCount = 0; px = window.innerWidth / 2; py = 120; vx = 0; vy = 0; score = 0; cameraY = 0; nextPlatY = 220; platforms = []; facingRight = true;
             platBox.innerHTML = ''; overlay.style.display = 'none'; scoreUI.innerText = `高度: 0 m`;
-            
-            // 建立起點
-            spawnPlatform(0, 100, window.innerWidth, 'normal');
-            for(let i=0; i<12; i++) generateNextPlatform();
-            
-            draw();
-            // 直接開始循環，不等待操作
+            spawnPlatform(window.innerWidth/2 - 100, 100, 200, 'normal');
+            for(let i=0; i<10; i++) generateNextPlatform();
             loopId = requestAnimationFrame(update);
         }
 
         function spawnPlatform(x, y, baseW, type) {
             const d = document.createElement('div');
             d.className = 'platform ' + type;
-            d.style.width = baseW + 'px'; d.style.left = x + 'px';
+            // 效能關鍵：固定寬度，使用 transform 縮放
+            d.style.width = baseW + 'px';
+            d.style.left = x + 'px';
             platBox.appendChild(d);
             const speed = 0.065 + (Math.random() - 0.5) * 0.01;
-            let actualMaxW = type === 'expand' ? baseW * 2.5 : baseW;
-            platforms.push({ x, y, baseW: actualMaxW, currentW: actualMaxW, type, el: d, phase: Math.random()*6, speed, shakeTimer: 0, dead: false });
+            platforms.push({ x, y, baseW, currentW: baseW, type, el: d, phase: Math.random()*6, speed, dead: false, shakeTimer: 0 });
         }
 
         function generateNextPlatform() {
-            let maxW_Mult = Math.max(1.8, 6 - (score / 40));
-            let randomW = (Math.random() * (maxW_Mult - 1) + 1) * 50;
+            let mult = Math.max(1.8, 6 - (score / 40));
+            let randomW = (Math.random() * (mult - 1) + 1) * 50;
             const x = Math.random() * (window.innerWidth - randomW);
             let roll = Math.random(), type = 'normal';
             if (score > 200) {
                 if (roll > 0.8) type = 'expand'; else if (roll > 0.6) type = 'danger';
             } else { if (roll > 0.85) type = 'danger'; }
             spawnPlatform(x, nextPlatY, randomW, type);
-            nextPlatY += 85 + Math.random() * 35;
+            nextPlatY += 90 + Math.random() * 35;
         }
 
-        function hideTut() { 
-            if(!hasMoved) { 
-                hasMoved = true; 
-                tutOverlay.style.opacity = '0'; 
-                setTimeout(() => tutOverlay.style.display = 'none', 400); 
-            } 
-        }
+        function hideTut() { if(!hasMoved) { hasMoved = true; tutOverlay.style.opacity = '0'; setTimeout(() => tutOverlay.style.display = 'none', 400); } }
 
         function update() {
             if (isDead) return;
             frameCount++;
-            
             let acc = (isTouch ? 0.75 : 1.1) * (isCrouching ? 0.6 : 1);
             if (m.left) { vx -= acc; facingRight = false; hideTut(); }
             if (m.right) { vx += acc; facingRight = true; hideTut(); }
@@ -158,30 +164,40 @@
             if (px < 0) px = window.innerWidth; if (px > window.innerWidth) px = 0;
             vy -= (isCrouching ? FALL_G : GRAVITY); py += vy;
 
-            // 攝影機
             if (py - cameraY > window.innerHeight * 0.42) {
                 cameraY += (py - cameraY - window.innerHeight * 0.42) * 0.15;
-                let curH = Math.max(0, Math.floor(py / 10) - 12);
-                if (curH > score) { score = curH; scoreUI.innerText = `高度: ${score} m`; }
+                score = Math.max(score, Math.floor(py / 10) - 12);
+                scoreUI.innerText = `高度: ${score} m`;
             }
 
-            // 伸縮平台 - 居中對稱
+            if (highScore > 0) {
+                let milestoneY = (highScore + 12) * 10;
+                milestoneLine.style.bottom = (milestoneY - cameraY) + 'px';
+            }
+
             platforms.forEach(p => {
                 if (p.type === 'expand' && !p.dead) {
                     let minW = 120;
+                    let maxW = p.baseW * 2.5;
                     let factor = (Math.sin(frameCount * p.speed + p.phase) + 1) / 2;
-                    p.currentW = minW + factor * (p.baseW - minW);
-                    p.el.style.width = p.currentW + 'px';
-                    p.el.style.left = (p.x + (p.baseW - p.currentW) / 2) + 'px';
+                    p.currentW = minW + factor * (maxW - minW);
+                    
+                    // 效能核心：完全不改寬度與位移，只改 Scale
+                    // visualScale = 目前寬度 / 初始寬度
+                    let visualScale = p.currentW / p.baseW;
+                    p.el.style.transform = `translateZ(0) scaleX(${visualScale})`;
+                } else {
+                    p.el.style.transform = `translateZ(0) scaleX(1)`;
                 }
                 p.el.style.bottom = (p.y - cameraY) + 'px';
             });
 
-            // 碰撞
             if (vy <= 0) {
                 platforms.forEach(p => {
-                    let pL = p.type === 'expand' ? (p.x + (p.baseW - p.currentW) / 2) : p.x;
-                    if (!p.dead && px + 22 > pL && px - 22 < pL + p.currentW && (py - vy) >= p.y + 15 && py <= p.y + 15) {
+                    // 對稱縮放的邊界計算
+                    let pL = p.x + (p.baseW - p.currentW) / 2;
+                    let pR = pL + p.currentW;
+                    if (!p.dead && px + 22 > pL && px - 22 < pR && (py - vy) >= p.y + 15 && py <= p.y + 15) {
                         py = p.y + 15; vy = 0; jumpCount = 0;
                         if (p.type === 'danger') {
                             p.shakeTimer++; p.el.classList.add('shaking');
@@ -213,10 +229,11 @@
                 highScore = score; localStorage.setItem('jelly_high_score', score);
                 document.getElementById('over-title').innerText = "🎉 新紀錄！";
                 bestUI.innerText = `最高: ${highScore} m`;
+                milestoneLine.innerText = `--- 🏆 BEST RECORD ${highScore}m ---`;
             } else { document.getElementById('over-title').innerText = "摔下去了！"; }
         }
 
-        let m = { left: false, right: false }, isCrouching = false, jumpCount = 0, facingRight = true, lastRelease = 0;
+        let m = { left: false, right: false }, isCrouching = false, jumpCount = 0, lastRelease = 0;
         function handleJump() {
             if (jumpCount >= 2 || isDead) return;
             hideTut();
@@ -228,32 +245,23 @@
             vy = pwr; jumpCount++; isCrouching = false;
         }
 
-        // 輸入控制
         if (isTouch) {
             const act = document.getElementById('btn-action'); let timer;
             act.addEventListener('touchstart', (e) => { e.preventDefault(); hideTut(); timer = setTimeout(()=>isCrouching=true, 150); });
             act.addEventListener('touchend', (e) => { e.preventDefault(); clearTimeout(timer); if(!isCrouching) handleJump(); else { isCrouching=false; lastRelease=Date.now(); } });
-            const b = (id, k) => { 
-                document.getElementById(id).addEventListener('touchstart', (e)=>{e.preventDefault(); hideTut(); m[k]=true;}); 
-                document.getElementById(id).addEventListener('touchend', (e)=>{e.preventDefault(); m[k]=false;}); 
-            };
+            const b = (id, k) => { document.getElementById(id).addEventListener('touchstart', (e)=>{e.preventDefault(); hideTut(); m[k]=true;}); document.getElementById(id).addEventListener('touchend', (e)=>{e.preventDefault(); m[k]=false;}); };
             b('btn-left', 'left'); b('btn-right', 'right');
         }
         window.onkeydown = (e) => {
-            let k = e.key.toLowerCase(); 
-            if(k==='r') { initGame(); return; }
-            if(isDead) return;
-            hideTut(); // 按任何鍵都隱藏說明
-            if(k==='a') m.left = true; if(k==='d') m.right = true; if(k==='s') isCrouching = true;
+            let k = e.key.toLowerCase(); if(k==='r') { initGame(); return; } if(isDead) return;
+            hideTut(); if(k==='a') m.left = true; if(k==='d') m.right = true; if(k==='s') isCrouching = true;
             if(k===' '||k==='w') { e.preventDefault(); handleJump(); }
         };
         window.onkeyup = (e) => {
             let k = e.key.toLowerCase(); if(k==='a') m.left = false; if(k==='d') m.right = false;
             if(k==='s') { isCrouching = false; lastRelease = Date.now(); }
         };
-
         document.getElementById('restart-btn').onclick = initGame;
-        // 開局即初始化，解決手動重整問題
         initGame();
     </script>
 </body>
