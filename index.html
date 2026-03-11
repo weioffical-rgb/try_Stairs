@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>果凍小人 - 巔峰攀爬版</title>
+    <title>果凍小人 - 從容攀爬版</title>
     <style>
         body { margin: 0; padding: 0; overflow: hidden; background-color: #fce4ec; font-family: sans-serif; touch-action: none; user-select: none; }
         #game-container { width: 100vw; height: 100vh; position: relative; background: linear-gradient(180deg, #a1c4fd 0%, #c2e9fb 100%); }
@@ -27,7 +27,7 @@
         @keyframes glow { from { text-shadow: 0 0 2px #fff; } to { text-shadow: 0 0 10px #f39c12; } }
         
         .platform { position: absolute; height: 15px; border-radius: 10px; border: 1px solid rgba(255,255,255,0.4); z-index: 5; background: rgba(255,255,255,0.7); transform-origin: center center; transition: opacity 0.2s; }
-        .danger { background: rgba(255, 82, 82, 0.7); }
+        .danger { background: rgba(255, 82, 82, 0.7); border-color: #d32f2f; } /* 稍微加深一點紅色，增加對比 */
         .expand { background: rgba(155, 89, 182, 0.7); }
         .seesaw { background: rgba(241, 196, 15, 0.7); border-color: #f39c12; }
         .shaking { animation: shake 0.1s infinite; }
@@ -55,9 +55,9 @@
         </div>
 
         <div id="tutorial-overlay">
-            <h3 style="margin:0">⚖️ 巔峰攀爬挑戰</h3>
+            <h3 style="margin:0">⚖️ 從容攀爬挑戰</h3>
             <p id="tut-device-msg" style="margin: 15px 0; font-weight: 500;">載入中...</p>
-            <div style="color:#d69e2e; font-weight:bold; font-size: 14px;">✨ 更新：延長紅色平台壽命，挑戰更從容！</div>
+            <div style="color:#d69e2e; font-weight:bold; font-size: 14px;">✨ 更新：紅色平台崩塌時間大幅延長！</div>
             <p style="font-size:12px; margin-top:15px; opacity:0.6;">( 操作即開始 )</p>
         </div>
 
@@ -83,11 +83,11 @@
         
         let px, py, vx, vy, score, cameraY, nextPlatY, highScore, platforms = [], isDead = false, loopId = null, frameCount = 0, facingRight = true, standingOn = null, maxReachedY = 0, hasMoved = false, isCrouching = false;
         
-        // 物理常數
+        // --- 物理常數與靈動手感 ---
         const GRAVITY = 0.72, FALL_G = 2.3, JUMP_P = 15.5, FRICTION = 0.86;
-        const MOVE_ACC = 1.45;
-        const fpsInterval = 1000 / 60; 
-        let then = 0;
+        const MOVE_ACC = 1.6; 
+        
+        let lastTime = 0;
 
         const isTouch = 'ontouchstart' in window || navigator.maxTouchPoints > 0;
         const tutMsg = document.getElementById('tut-device-msg');
@@ -95,7 +95,7 @@
             document.getElementById('mobile-ctrl').style.display = 'block';
             tutMsg.innerText = "按鈕移動，長按 ACTION 蓄力，點擊跳躍";
         } else {
-            tutMsg.innerText = "A/D 移動，Space 跳躍，S 鍵蓄力";
+            tutMsg.innerText = "A/D 移動，Space/W 跳躍，S 鍵蓄力";
         }
 
         function loadBest() {
@@ -112,12 +112,12 @@
         function initGame() {
             if (loopId) cancelAnimationFrame(loopId);
             isDead = false; frameCount = 0; px = window.innerWidth / 2; py = 120; vx = 0; vy = 0; score = 0; cameraY = 0; nextPlatY = 220; platforms = []; facingRight = true; standingOn = null; maxReachedY = 120;
+            lastTime = performance.now();
             platBox.innerHTML = ''; overlay.style.display = 'none'; scoreUI.innerText = `巔峰高度: 0 m`;
             bestUI.classList.remove('new-record-glow');
             loadBest();
             spawnPlatform(window.innerWidth/2 - 100, 100, 200, 'normal');
             for(let i=0; i<15; i++) generateNextPlatform();
-            then = performance.now();
             loopId = requestAnimationFrame(update);
         }
 
@@ -136,7 +136,7 @@
             const x = Math.random() * (window.innerWidth - (randomW * 1.5));
             let roll = Math.random(), type = 'normal';
             if (score > 100) {
-                if (roll > 0.8) type = 'expand'; else if (roll > 0.6) type = 'seesaw'; else if (roll > 0.42) type = 'danger';
+                if (roll > 0.82) type = 'expand'; else if (roll > 0.68) type = 'seesaw'; else if (roll > 0.48) type = 'danger';
             }
             spawnPlatform(x, nextPlatY, randomW, type);
             nextPlatY += 90 + Math.random() * 35;
@@ -152,94 +152,93 @@
 
         let m_keys = { left: false, right: false };
 
-        function update(now) {
+        function update(timestamp) {
             if (isDead) return;
             loopId = requestAnimationFrame(update);
 
-            let elapsed = now - then;
-            if (elapsed > fpsInterval) {
-                then = now - (elapsed % fpsInterval);
-                
-                frameCount++;
-                let dt = 1; 
-                let currentAcc = (isTouch ? MOVE_ACC * 0.7 : MOVE_ACC) * (isCrouching ? 0.6 : 1);
-                
-                if (m_keys.left) { vx -= currentAcc; facingRight = false; hideTut(); }
-                if (m_keys.right) { vx += currentAcc; facingRight = true; hideTut(); }
-                
-                vx *= Math.pow(FRICTION, dt); 
-                px += vx * dt;
-                if (px < 0) px = window.innerWidth; if (px > window.innerWidth) px = 0;
-                
-                if (standingOn && standingOn.type === 'seesaw') {
-                    let dist = px - (standingOn.x + standingOn.baseW / 2);
-                    py = standingOn.y + 15 - Math.tan(standingOn.angle * Math.PI / 180) * dist;
-                    vy = 0;
-                } else {
-                    vy -= (isCrouching ? FALL_G : GRAVITY) * dt;
-                    py += vy * dt;
+            if (!lastTime) lastTime = timestamp;
+            let dt = (timestamp - lastTime) / (1000 / 60); 
+            lastTime = timestamp;
+            if (dt > 2.5) dt = 2.5; 
+
+            frameCount++;
+            let currentAcc = (isTouch ? MOVE_ACC * 0.7 : MOVE_ACC) * (isCrouching ? 0.6 : 1) * dt;
+            
+            if (m_keys.left) { vx -= currentAcc; facingRight = false; hideTut(); }
+            if (m_keys.right) { vx += currentAcc; facingRight = true; hideTut(); }
+            
+            vx *= Math.pow(FRICTION, dt); 
+            px += vx * dt;
+            if (px < 0) px = window.innerWidth; if (px > window.innerWidth) px = 0;
+            
+            if (standingOn && standingOn.type === 'seesaw') {
+                let dist = px - (standingOn.x + standingOn.baseW / 2);
+                py = standingOn.y + 15 - Math.tan(standingOn.angle * Math.PI / 180) * dist;
+                vy = 0;
+            } else {
+                vy -= (isCrouching ? FALL_G : GRAVITY) * dt;
+                py += vy * dt;
+            }
+
+            maxReachedY = Math.max(maxReachedY, py);
+            let screenPos = py - cameraY;
+            let dzTop = window.innerHeight * 0.65, dzBot = window.innerHeight * 0.35;
+
+            if (screenPos > dzTop) cameraY += (screenPos - dzTop) * 0.08 * dt;
+            else if (screenPos < dzBot) cameraY += (screenPos - dzBot) * 0.05 * dt;
+
+            score = Math.max(score, Math.floor(maxReachedY / 10) - 12);
+            scoreUI.innerText = `巔峰高度: ${score} m`;
+            if (score > highScore && highScore > 0) {
+                bestUI.innerText = `刷新巔峰: ${score} m`;
+                bestUI.classList.add('new-record-glow');
+            }
+
+            platforms.forEach(p => {
+                let trans = `translateZ(0) `;
+                if (p.type === 'expand' && !p.dead) {
+                    let factor = (Math.sin(frameCount * p.speed + p.phase) + 1) / 2;
+                    p.currentW = 60 + factor * (p.baseW * 2.5 - 60);
+                    trans += `scaleX(${p.currentW / p.baseW}) `;
+                } else if (p.type === 'seesaw') {
+                    p.angle *= Math.pow(0.95, dt); trans += `rotate(${p.angle}deg) `;
                 }
+                p.el.style.transform = trans;
+                p.el.style.bottom = (p.y - cameraY) + 'px';
+            });
 
-                maxReachedY = Math.max(maxReachedY, py);
-                let screenPos = py - cameraY;
-                let dzTop = window.innerHeight * 0.65, dzBot = window.innerHeight * 0.35;
-
-                if (screenPos > dzTop) cameraY += (screenPos - dzTop) * 0.07 * dt;
-                else if (screenPos < dzBot) cameraY += (screenPos - dzBot) * 0.05 * dt;
-
-                score = Math.max(score, Math.floor(maxReachedY / 10) - 12);
-                scoreUI.innerText = `巔峰高度: ${score} m`;
-                if (score > highScore && highScore > 0) {
-                    bestUI.innerText = `刷新巔峰: ${score} m`;
-                    bestUI.classList.add('new-record-glow');
-                }
-
-                platforms.forEach(p => {
-                    let trans = `translateZ(0) `;
-                    if (p.type === 'expand' && !p.dead) {
-                        let factor = (Math.sin(frameCount * p.speed + p.phase) + 1) / 2;
-                        p.currentW = 60 + factor * (p.baseW * 2.5 - 60);
-                        trans += `scaleX(${p.currentW / p.baseW}) `;
-                    } else if (p.type === 'seesaw') {
-                        p.angle *= Math.pow(0.95, dt); trans += `rotate(${p.angle}deg) `;
-                    }
-                    p.el.style.transform = trans;
-                    p.el.style.bottom = (p.y - cameraY) + 'px';
-                });
-
-                standingOn = null;
-                platforms.forEach(p => {
-                    let pL = p.x + (p.baseW - p.currentW) / 2, pR = pL + p.currentW;
-                    if (!p.dead && px + 22 > pL && px - 22 < pR) {
-                        let platTop = p.y + 15;
-                        if (p.type === 'seesaw') platTop -= Math.tan(p.angle * Math.PI / 180) * (px - (p.x + p.baseW / 2));
-                        if (vy <= 0 && (py >= platTop - 15 && py <= platTop + 15)) {
-                            standingOn = p; py = platTop; vy = 0; jumpCount = 0;
-                            
-                            // --- 紅色危險平台：延長時間至 45 幀 ---
-                            if (p.type === 'danger') {
-                                p.shakeTimer += dt;
-                                p.el.classList.add('shaking');
-                                if (p.shakeTimer > 45) { // 加長反應時間（原 25）
-                                    p.dead = true; p.el.style.opacity = '0'; standingOn = null;
-                                }
-                            }
-                            
-                            if (p.type === 'seesaw') {
-                                let dist = px - (p.x + p.baseW / 2);
-                                p.angle += ( (dist / (p.baseW / 2) * 30) - p.angle) * 0.1 * dt;
-                                vx += p.angle * 0.012 * dt;
+            standingOn = null;
+            platforms.forEach(p => {
+                let pL = p.x + (p.baseW - p.currentW) / 2, pR = pL + p.currentW;
+                if (!p.dead && px + 22 > pL && px - 22 < pR) {
+                    let platTop = p.y + 15;
+                    if (p.type === 'seesaw') platTop -= Math.tan(p.angle * Math.PI / 180) * (px - (p.x + p.baseW / 2));
+                    if (vy <= 0 && (py >= platTop - 15 && py <= platTop + 15)) {
+                        standingOn = p; py = platTop; vy = 0; jumpCount = 0;
+                        
+                        // --- 紅色危險平台：消失時間延長至 70 幀 ---
+                        if (p.type === 'danger') {
+                            p.shakeTimer += dt;
+                            p.el.classList.add('shaking');
+                            if (p.shakeTimer > 70) { // 大幅加長（原 45）
+                                p.dead = true; p.el.style.opacity = '0'; standingOn = null;
                             }
                         }
+                        
+                        if (p.type === 'seesaw') {
+                            let dist = px - (p.x + p.baseW / 2);
+                            p.angle += ( (dist / (p.baseW / 2) * 30) - p.angle) * 0.1 * dt;
+                            vx += p.angle * 0.012 * dt;
+                        }
                     }
-                });
+                }
+            });
 
-                if (nextPlatY - cameraY < window.innerHeight + 500) generateNextPlatform();
-                platforms = platforms.filter(p => { if (p.y < cameraY - 1000) { p.el.remove(); return false; } return true; });
-                if (py < cameraY - 800) gameOver();
-                
-                draw();
-            }
+            if (nextPlatY - cameraY < window.innerHeight + 500) generateNextPlatform();
+            platforms = platforms.filter(p => { if (p.y < cameraY - 1000) { p.el.remove(); return false; } return true; });
+            if (py < cameraY - 800) gameOver();
+            
+            draw();
         }
 
         function draw() {
