@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>果凍小人 - 巔峰爬梯</title>
+    <title>果凍小人 - 巔峰攀爬</title>
     <style>
         body { margin: 0; padding: 0; overflow: hidden; background-color: #fce4ec; font-family: sans-serif; touch-action: none; user-select: none; }
         #game-container { width: 100vw; height: 100vh; position: relative; background: linear-gradient(180deg, #a1c4fd 0%, #c2e9fb 100%); }
@@ -16,10 +16,9 @@
             box-shadow: 0 5px 10px rgba(255,154,158,0.3); 
             will-change: transform, left, bottom; 
         }
-        /* 嚴格遵照你提供的原始眼睛樣式 */
+        /* 嚴格還原：純白眼睛樣式 */
         #eyes { position: absolute; top: 12px; width: 10px; height: 10px; background: white; border-radius: 50%; transition: left 0.1s ease; }
         
-        /* UI 系統 */
         #ui-header { position: absolute; top: 25px; width: 100%; text-align: center; z-index: 500; pointer-events: none; }
         .score-box { display: inline-block; background: rgba(255,255,255,0.85); color: #5d6d7e; padding: 10px 30px; border-radius: 20px; font-weight: bold; font-size: 18px; box-shadow: 0 4px 10px rgba(0,0,0,0.1); }
         .new-record-glow { color: #f39c12; animation: glow 1s infinite alternate; }
@@ -33,14 +32,12 @@
             border: 1px solid rgba(0,0,0,0.05); box-shadow: 0 10px 30px rgba(0,0,0,0.1);
         }
 
-        /* 平台樣式 */
         .platform { position: absolute; height: 15px; border-radius: 10px; border: 1px solid rgba(255,255,255,0.4); z-index: 5; background: rgba(255,255,255,0.7); transform-origin: center center; }
         .danger { background: rgba(255, 82, 82, 0.7); }
         .expand { background: rgba(155, 89, 182, 0.7); }
         .seesaw { background: rgba(241, 196, 15, 0.7); border-color: #f39c12; }
         .ice { background: linear-gradient(135deg, #001a66 0%, #0044ff 100%); border: 2px solid #ffffff; box-shadow: 0 0 25px rgba(0, 51, 204, 0.9); }
         
-        /* 🌵 仙人掌特別樣式 */
         .spiky { background: #1b5e20; border: none; }
         .spiky::before, .spiky::after { content: '▲▲▲▲'; position: absolute; top: -14px; color: #ff1744; font-size: 12px; font-weight: bold; letter-spacing: 2px; }
         .spiky::before { left: 10px; } .spiky::after { right: 10px; }
@@ -48,7 +45,6 @@
         .shaking { animation: shake 0.1s infinite; }
         @keyframes shake { 0% { transform: translateX(2px); } 100% { transform: translateX(-2px); } }
         
-        /* 結算畫面 */
         #overlay { 
             position: absolute; top: 0; left: 0; width: 100%; height: 100%; 
             background: rgba(0,0,0,0.75); backdrop-filter: blur(8px); 
@@ -59,14 +55,12 @@
         #restart-btn { background: #ff9a9e; color: white; border: none; padding: 15px 40px; border-radius: 30px; font-size: 20px; font-weight: bold; margin-top: 25px; cursor: pointer; }
         #reset-record-btn { margin-top: 40px; font-size: 12px; color: rgba(255,255,255,0.4); cursor: pointer; text-decoration: underline; pointer-events: auto; }
 
-        /* 手機按鈕 */
         .mobile-ui { position: absolute; width: 100%; height: 100%; top: 0; left: 0; z-index: 400; pointer-events: none; display: none; }
         .btn { position: absolute; background: rgba(255, 255, 255, 0.5); border: 2px solid rgba(255, 255, 255, 0.8); display: flex; align-items: center; justify-content: center; pointer-events: auto; border-radius: 22px; font-weight: bold; font-size: 24px; color: #444; }
         #btn-left { bottom: 30px; left: 20px; width: 80px; height: 80px; }
         #btn-right { bottom: 30px; left: 110px; width: 80px; height: 80px; }
         #btn-action { bottom: 30px; right: 20px; width: 120px; height: 90px; border-radius: 40px; }
 
-        /* 波紋動畫 */
         .jump-wave { position: absolute; width: 40px; height: 15px; border: 3px solid rgba(255,255,255,0.9); border-radius: 50%; pointer-events: none; z-index: 1000; transform: translate(-50%, -50%); animation: wave-ani 0.4s forwards; }
         .super-wave { border: 5px solid #fff176; box-shadow: 0 0 20px #fff59d; }
         @keyframes wave-ani { 0% { transform: translate(-50%, -50%) scale(0.1); opacity: 1; } 100% { transform: translate(-50%, -50%) scale(3.5); opacity: 0; } }
@@ -82,10 +76,9 @@
         </div>
 
         <div id="tutorial-overlay">
-            <h3 style="margin:0">⚖️ 絕望巔峰</h3>
+            <h3 style="margin:0">⚖️ 閃電死亡判定</h3>
             <p id="tut-device-msg">載入中...</p>
-            <div style="color:#d69e2e; font-weight:bold;">⚠️ 提醒：冰塊變長且傾斜 ±30 度，仙人掌會斜向擊飛！</div>
-            <p style="font-size:12px; margin-top:10px; opacity:0.6;">( 按下任何鍵開始 )</p>
+            <div style="color:#ff1744; font-weight:bold;">⚠️ 警告：掉落區間減半，離開鏡頭即死！</div>
         </div>
 
         <div id="overlay">
@@ -144,7 +137,7 @@
         }
 
         function generateNextPlatform() {
-            let mult = Math.max(1.1, 5.0 - (score / 60));
+            let mult = Math.max(1.1, 5.0 - (score / 65));
             let randomW = (Math.random() * (mult - 1) + 1) * 50;
             const x = Math.random() * (window.innerWidth - (randomW * 1.5));
             let roll = Math.random(), type = 'normal';
@@ -156,7 +149,8 @@
                 else if (roll > 0.06) type = 'danger';
             }
             spawnPlatform(x, nextPlatY, randomW, type);
-            nextPlatY += 95 + Math.random() * 45;
+            let baseGap = isTouch ? 180 : 130;
+            nextPlatY += baseGap + Math.random() * 70;
         }
 
         function triggerFX(isSuper) {
@@ -184,7 +178,9 @@
             
             if (standingOn) {
                 let platTop = standingOn.y + 15;
-                if (standingOn.type === 'seesaw' || standingOn.type === 'ice') platTop -= Math.tan(standingOn.angle * Math.PI / 180) * (px - (standingOn.x + standingOn.baseW / 2));
+                if (standingOn.type === 'seesaw' || standingOn.type === 'ice') {
+                    platTop -= Math.tan(standingOn.angle * Math.PI / 180) * (px - (standingOn.x + standingOn.baseW / 2));
+                }
                 py = platTop; vy = 0;
             } else { vy -= (isCrouching ? FALL_G : GRAVITY) * dt; py += vy * dt; }
 
@@ -232,7 +228,10 @@
                     }
                 }
             });
-            if (py < cameraY - 800) gameOver(); draw();
+            
+            // --- 核心改動：嚴格死亡判定 ---
+            // 原本是 800px，現在改為 400px，玩家掉到螢幕下一點點就會判定 GameOver
+            if (py < cameraY - 400) gameOver(); draw();
         }
 
         function draw() {
