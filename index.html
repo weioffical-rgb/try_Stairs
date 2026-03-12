@@ -16,7 +16,7 @@
             box-shadow: 0 5px 10px rgba(255,154,158,0.3); 
             will-change: transform, left, bottom; 
         }
-        /* 嚴格還原：純白眼睛樣式 */
+
         #eyes { position: absolute; top: 12px; width: 10px; height: 10px; background: white; border-radius: 50%; transition: left 0.1s ease; }
         
         #ui-header { position: absolute; top: 25px; width: 100%; text-align: center; z-index: 500; pointer-events: none; }
@@ -28,7 +28,7 @@
             position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%);
             background: rgba(255, 255, 255, 0.95); padding: 25px 40px; border-radius: 30px; 
             text-align: center; color: #4a5568; z-index: 600; 
-            transition: opacity 0.5s, visibility 0.5s; width: 80%; max-width: 350px; 
+            transition: opacity 0.5s, visibility 0.5s; width: 80%; max-width: 390px; 
             border: 1px solid rgba(0,0,0,0.05); box-shadow: 0 10px 30px rgba(0,0,0,0.1);
         }
 
@@ -64,6 +64,49 @@
         .jump-wave { position: absolute; width: 40px; height: 15px; border: 3px solid rgba(255,255,255,0.9); border-radius: 50%; pointer-events: none; z-index: 1000; transform: translate(-50%, -50%); animation: wave-ani 0.4s forwards; }
         .super-wave { border: 5px solid #fff176; box-shadow: 0 0 20px #fff59d; }
         @keyframes wave-ani { 0% { transform: translate(-50%, -50%) scale(0.1); opacity: 1; } 100% { transform: translate(-50%, -50%) scale(3.5); opacity: 0; } }
+
+        #lava {
+            position: absolute;
+            left: 0;
+            width: 100%;
+            height: 420px;
+            bottom: -520px;
+            z-index: 40;
+            pointer-events: none;
+            background:
+                linear-gradient(180deg,
+                    rgba(255,245,120,0.97) 0%,
+                    rgba(255,190,0,0.97) 14%,
+                    rgba(255,120,25,0.98) 35%,
+                    rgba(245,70,20,0.99) 58%,
+                    rgba(170,20,20,1) 100%);
+            box-shadow:
+                0 0 40px rgba(255,87,34,0.9),
+                0 0 140px rgba(255,120,0,0.55);
+            border-top: 6px solid rgba(255,255,255,0.5);
+            overflow: hidden;
+        }
+
+        #lava::before {
+            content: '';
+            position: absolute;
+            left: 0; top: 0; width: 100%; height: 34px;
+            background:
+                radial-gradient(circle at 5% 100%, rgba(255,255,255,0.72) 0 10px, transparent 11px),
+                radial-gradient(circle at 18% 100%, rgba(255,230,120,0.95) 0 16px, transparent 17px),
+                radial-gradient(circle at 33% 100%, rgba(255,255,255,0.56) 0 11px, transparent 12px),
+                radial-gradient(circle at 49% 100%, rgba(255,220,90,0.88) 0 15px, transparent 16px),
+                radial-gradient(circle at 64% 100%, rgba(255,255,255,0.6) 0 12px, transparent 13px),
+                radial-gradient(circle at 79% 100%, rgba(255,215,70,0.88) 0 17px, transparent 18px),
+                radial-gradient(circle at 92% 100%, rgba(255,255,255,0.65) 0 11px, transparent 12px);
+            opacity: 0.9;
+        }
+
+        #lava-ui { font-size: 13px; opacity: 0.95; margin-top: 4px; transition: color 0.2s ease, text-shadow 0.2s ease, transform 0.2s ease; }
+        .lava-safe { color: #2e7d32; text-shadow: none; transform: scale(1); }
+        .lava-mid { color: #fdd835; text-shadow: none; transform: scale(1); }
+        .lava-warn { color: #fb8c00; text-shadow: 0 0 8px rgba(255,140,0,0.35); transform: scale(1.02); }
+        .lava-danger { color: #ff1744; text-shadow: 0 0 12px rgba(255,23,68,0.65); transform: scale(1.05); }
     </style>
 </head>
 <body>
@@ -72,12 +115,16 @@
             <div class="score-box">
                 <div id="score-ui">巔峰高度: 0 m</div>
                 <div id="best-ui" style="font-size:13px; opacity:0.8; margin-top:4px;">最高紀錄: 0 m</div>
+                <div id="lava-ui" class="lava-safe">岩漿待命：操作後開始倒數</div>
             </div>
         </div>
 
         <div id="tutorial-overlay">
-            <h3 style="margin:0">⚖️ 閃電死亡判定</h3>
-            <p id="tut-device-msg">載入中...</p>
+            <h3 style="margin:0 0 10px 0;">🎮 操作說明</h3>
+            <p id="tut-device-msg" style="margin:0 0 10px 0;">載入中...</p>
+            <div style="font-size:14px; margin-bottom:10px; color:#ef6c00; font-weight:bold;">
+                本次更新：玩家操作後才開始 10 秒倒數，之後岩漿開始追擊並越追越快
+            </div>
             <div style="color:#ff1744; font-weight:bold;">⚠️ 警告：掉落區間減半，離開鏡頭即死！</div>
         </div>
 
@@ -92,6 +139,7 @@
         
         <div id="player"><div id="eyes"></div></div>
         <div id="plat-box"></div>
+        <div id="lava"></div>
         
         <div class="mobile-ui" id="mobile-ctrl">
             <div class="btn" id="btn-left">←</div><div class="btn" id="btn-right">→</div><div class="btn" id="btn-action">ACTION</div>
@@ -99,11 +147,11 @@
     </div>
 
     <script>
-        const player = document.getElementById('player'), eyes = document.getElementById('eyes'), platBox = document.getElementById('plat-box'), scoreUI = document.getElementById('score-ui'), bestUI = document.getElementById('best-ui'), overlay = document.getElementById('overlay'), container = document.getElementById('game-container'), tutOverlay = document.getElementById('tutorial-overlay');
+        const player = document.getElementById('player'), eyes = document.getElementById('eyes'), platBox = document.getElementById('plat-box'), scoreUI = document.getElementById('score-ui'), bestUI = document.getElementById('best-ui'), lavaUI = document.getElementById('lava-ui'), lavaEl = document.getElementById('lava'), overlay = document.getElementById('overlay'), container = document.getElementById('game-container'), tutOverlay = document.getElementById('tutorial-overlay');
         
-        let px, py, vx, vy, score, cameraY, nextPlatY, highScore, platforms = [], isDead = false, loopId = null, frameCount = 0, facingRight = true, standingOn = null, maxReachedY = 0, hasMoved = false, isCrouching = false, lastTime = 0, m_keys = { left: false, right: false };
+        let px, py, vx, vy, score, cameraY, nextPlatY, highScore, platforms = [], isDead = false, loopId = null, frameCount = 0, facingRight = true, standingOn = null, maxReachedY = 0, hasMoved = false, isCrouching = false, lastTime = 0, firstInputTime = null, lavaStarted = false, lavaY = -9999, gameActivated = false, m_keys = { left: false, right: false };
         
-        const GRAVITY = 0.72, FALL_G = 2.3, JUMP_P = 15.5, FRICTION_NORMAL = 0.86, FRICTION_ICE = 0.9992, MOVE_ACC = 1.6;
+        const GRAVITY = 0.72, FALL_G = 2.3, JUMP_P = 15.5, FRICTION_NORMAL = 0.86, FRICTION_ICE = 0.9992, MOVE_ACC = 1.6, LAVA_HEIGHT = 420;
 
         const isTouch = 'ontouchstart' in window || navigator.maxTouchPoints > 0;
         document.getElementById('tut-device-msg').innerText = isTouch ? "左右鈕移動，長按 ACTION 蓄力" : "A/D 移動，Space 跳躍，S 蓄力";
@@ -113,16 +161,49 @@
             highScore = parseInt(localStorage.getItem('jelly_high_score')) || 0; 
             bestUI.innerText = `最高紀錄: ${highScore} m`; 
         }
-        function hideTut() { if(!hasMoved) { hasMoved = true; tutOverlay.style.opacity = '0'; setTimeout(()=>tutOverlay.style.visibility='hidden', 500); } }
+
+        function hideTut() {
+            if(!hasMoved) {
+                hasMoved = true;
+                tutOverlay.style.opacity = '0';
+                setTimeout(()=>tutOverlay.style.visibility='hidden', 500);
+            }
+        }
+
+        function activateGame() {
+            if (!gameActivated) {
+                gameActivated = true;
+                firstInputTime = performance.now();
+                setLavaUIState('lava-safe', '岩漿倒數: 10 秒');
+            }
+        }
+
+        function setLavaUIState(state, text) {
+            lavaUI.classList.remove('lava-safe', 'lava-mid', 'lava-warn', 'lava-danger');
+            lavaUI.classList.add(state);
+            lavaUI.innerText = text;
+        }
+
+        function updateLavaDistanceUI(distance) {
+            if (distance > 120) setLavaUIState('lava-safe', `岩漿距離: ${distance} m`);
+            else if (distance > 70) setLavaUIState('lava-mid', `岩漿距離: ${distance} m`);
+            else if (distance > 30) setLavaUIState('lava-warn', `岩漿距離: ${distance} m`);
+            else setLavaUIState('lava-danger', `岩漿距離: ${distance} m`);
+        }
 
         function initGame() {
             if (loopId) cancelAnimationFrame(loopId);
             isDead = false; frameCount = 0; px = window.innerWidth / 2; py = 120; vx = 0; vy = 0; score = 0; cameraY = 0; nextPlatY = 220; platforms = []; facingRight = true; standingOn = null; maxReachedY = 120;
-            lastTime = performance.now(); platBox.innerHTML = ''; overlay.style.display = 'none'; 
+            lastTime = performance.now(); firstInputTime = null; lavaStarted = false; lavaY = -9999; hasMoved = false; gameActivated = false;
+            platBox.innerHTML = ''; overlay.style.display = 'none'; lavaEl.style.bottom = '-520px';
+            setLavaUIState('lava-safe', '岩漿待命：操作後開始倒數');
             bestUI.classList.remove('new-record-glow');
+            tutOverlay.style.opacity = '1';
+            tutOverlay.style.visibility = 'visible';
             loadBest();
             spawnPlatform(window.innerWidth/2 - 100, 100, 200, 'normal');
-            for(let i=0; i<25; i++) generateNextPlatform();
+            const initialPlatformCount = isTouch ? 25 : 52;
+            for(let i=0; i<initialPlatformCount; i++) generateNextPlatform();
             loopId = requestAnimationFrame(update);
         }
 
@@ -149,8 +230,9 @@
                 else if (roll > 0.06) type = 'danger';
             }
             spawnPlatform(x, nextPlatY, randomW, type);
-            let baseGap = isTouch ? 180 : 130;
-            nextPlatY += baseGap + Math.random() * 70;
+            let baseGap = isTouch ? 180 : 76;
+            let randomGap = isTouch ? 70 : 34;
+            nextPlatY += baseGap + Math.random() * randomGap;
         }
 
         function triggerFX(isSuper) {
@@ -186,16 +268,45 @@
 
             maxReachedY = Math.max(maxReachedY, py);
             let screenPos = py - cameraY;
-            if (screenPos > window.innerHeight * 0.65) cameraY += (screenPos - window.innerHeight * 0.65) * 0.08 * dt;
+            if (screenPos > window.innerHeight * 0.60) cameraY += (screenPos - window.innerHeight * 0.60) * 0.08 * dt;
             else if (screenPos < window.innerHeight * 0.35) cameraY += (screenPos - window.innerHeight * 0.35) * 0.05 * dt;
 
             score = Math.max(score, Math.floor(maxReachedY / 10) - 12);
             scoreUI.innerText = `巔峰高度: ${score} m`;
             if (score > highScore && highScore > 0) { bestUI.innerText = `刷新巔峰: ${score} m`; bestUI.classList.add('new-record-glow'); }
 
-            if (nextPlatY - cameraY < window.innerHeight + 1200) generateNextPlatform();
+            if (gameActivated) {
+                const activeSec = (timestamp - firstInputTime) / 1000;
+                if (!lavaStarted && activeSec >= 10) {
+                    lavaStarted = true;
+                    lavaY = cameraY - 520;
+                }
+
+                if (lavaStarted) {
+                    const lavaSpeed = (1.0 + (activeSec - 10) * 0.05) * dt;
+                    lavaY += lavaSpeed;
+                    lavaEl.style.bottom = Math.floor(lavaY - cameraY) + 'px';
+
+                    const lavaTopY = lavaY + LAVA_HEIGHT;
+                    const lavaDistance = Math.max(0, Math.floor((py - lavaTopY) / 10));
+                    updateLavaDistanceUI(lavaDistance);
+
+                    if (py <= lavaTopY) {
+                        gameOver('被岩漿吞沒！');
+                        return;
+                    }
+                } else {
+                    const remain = Math.max(0, Math.ceil(10 - activeSec));
+                    setLavaUIState('lava-safe', `岩漿倒數: ${remain} 秒`);
+                }
+            } else {
+                lavaEl.style.bottom = '-520px';
+                setLavaUIState('lava-safe', '岩漿待命：操作後開始倒數');
+            }
+
+            if (nextPlatY - cameraY < window.innerHeight + 1500) generateNextPlatform();
             platforms = platforms.filter(p => {
-                if (p.y < cameraY - 2000) { p.el.remove(); return false; } 
+                if (p.y < cameraY - 2300) { p.el.remove(); return false; } 
                 let trans = `translateZ(0) `;
                 if (p.type === 'expand' && !p.dead) {
                     let f = (Math.sin(performance.now()*0.004+p.phase)+1)/2;
@@ -229,9 +340,8 @@
                 }
             });
             
-            // --- 核心改動：嚴格死亡判定 ---
-            // 原本是 800px，現在改為 400px，玩家掉到螢幕下一點點就會判定 GameOver
-            if (py < cameraY - 400) gameOver(); draw();
+            if (py < cameraY - 400) gameOver(); 
+            draw();
         }
 
         function draw() {
@@ -241,8 +351,8 @@
             eyes.style.left = facingRight ? '32px' : '8px';
         }
 
-        function gameOver() { 
-            isDead = true; overlay.style.display = 'flex'; document.getElementById('final-score').innerText = `本次最終高度: ${score} m`;
+        function gameOver(reason = '失足墜落！') { 
+            isDead = true; overlay.style.display = 'flex'; document.getElementById('over-title').innerText = reason; document.getElementById('final-score').innerText = `本次最終高度: ${score} m`;
             let r = "💩 Beginner";
             if (score > 50000) r = "👁️ THE GOD"; else if (score > 20000) r = "🛸 GALAXY"; else if (score > 10000) r = "🌌 SPACE"; else if (score > 5000) r = "🏔️ KING"; else if (score > 2000) r = "🧗 ELITE"; else if (score > 500) r = "🏃 JUMPER";
             document.getElementById('rank-label').innerText = `RANK: ${r}`;
@@ -254,21 +364,35 @@
         let jumpCount = 0, lastRel = 0;
         function handleJump() {
             if (jumpCount >= 2 || isDead) return;
-            hideTut(); let pwr = JUMP_P, isS = false, now = Date.now();
+            activateGame();
+            hideTut();
+            let pwr = JUMP_P, isS = false, now = Date.now();
             if (jumpCount === 0 && now - lastRel < 250 && !isCrouching) { pwr *= 1.45; isS = true; }
             triggerFX(isS); vy = pwr; standingOn = null; jumpCount++; isCrouching = false;
         }
 
         if (isTouch) {
-            const b = (id, k) => { document.getElementById(id).addEventListener('touchstart', (e)=>{e.preventDefault(); m_keys[k]=true;}); document.getElementById(id).addEventListener('touchend', (e)=>{e.preventDefault(); m_keys[k]=false;}); };
+            const b = (id, k) => { 
+                document.getElementById(id).addEventListener('touchstart', (e)=>{ e.preventDefault(); activateGame(); if(k){ m_keys[k]=true; hideTut(); } }); 
+                document.getElementById(id).addEventListener('touchend', (e)=>{ e.preventDefault(); if(k) m_keys[k]=false; }); 
+            };
             b('btn-left', 'left'); b('btn-right', 'right');
-            let t; document.getElementById('btn-action').addEventListener('touchstart', (e)=>{e.preventDefault(); t=setTimeout(()=>isCrouching=true, 180);});
-            document.getElementById('btn-action').addEventListener('touchend', (e)=>{e.preventDefault(); clearTimeout(t); if(!isCrouching) handleJump(); else {isCrouching=false; lastRel=Date.now();}});
+            let t; 
+            document.getElementById('btn-action').addEventListener('touchstart', (e)=>{ e.preventDefault(); activateGame(); hideTut(); t=setTimeout(()=>isCrouching=true, 180); });
+            document.getElementById('btn-action').addEventListener('touchend', (e)=>{ e.preventDefault(); clearTimeout(t); if(!isCrouching) handleJump(); else {isCrouching=false; lastRel=Date.now();} });
         }
 
         document.getElementById('reset-record-btn').onclick = () => { if(confirm("清除紀錄？")) { localStorage.removeItem('jelly_high_score'); highScore = 0; initGame(); } };
         document.getElementById('restart-btn').onclick = initGame;
-        window.onkeydown = (e) => { let k = e.key.toLowerCase(); if(k==='r') initGame(); if(isDead) return; if(k==='a') m_keys.left=true; if(k==='d') m_keys.right=true; if(k==='s') isCrouching=true; if(k===' '||k==='w') {e.preventDefault(); handleJump();} };
+        window.onkeydown = (e) => { 
+            let k = e.key.toLowerCase();
+            if(k==='r') initGame();
+            if(isDead) return;
+            if(k==='a') { activateGame(); hideTut(); m_keys.left=true; }
+            if(k==='d') { activateGame(); hideTut(); m_keys.right=true; }
+            if(k==='s') { activateGame(); hideTut(); isCrouching=true; }
+            if(k===' '||k==='w') { e.preventDefault(); handleJump(); }
+        };
         window.onkeyup = (e) => { let k = e.key.toLowerCase(); if(k==='a') m_keys.left=false; if(k==='d') m_keys.right=false; if(k==='s') {isCrouching=false; lastRel=Date.now();} };
         initGame();
     </script>
